@@ -8,8 +8,8 @@ use Psr\Http\Server\MiddlewareInterface;
 
 
 /**
- * Interface ResolverInterface
- * @package Lobster\Resolver
+ * Interface Resolver
+ * @package Lobster\Resolver\Contracts
  */
 interface Resolver
 {
