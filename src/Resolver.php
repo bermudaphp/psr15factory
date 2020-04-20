@@ -4,7 +4,6 @@
 namespace Lobster\Resolver;
 
 
-
 use Psr\Container\ContainerInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
