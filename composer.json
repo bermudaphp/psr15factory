@@ -1,0 +1,13 @@
+{
+  "name": "lobster-php/resolver",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Lobster\\Resolver\\": "src/"
+    }
+  },
+  "require": {
+    "php": ">= 7.4",
+    "lobster-php/pipeline": "v1.0"
+  }
+}
