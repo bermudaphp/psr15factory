@@ -31,7 +31,7 @@ class CallableDecorator implements MiddlewareInterface
     {
         return new class($middleware) extends CallableDecorator
         {
-           protected function handle(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+           function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
            {
                return ($this->middleware)($request);
            }
@@ -80,22 +80,11 @@ class CallableDecorator implements MiddlewareInterface
              */
             public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
             {
-                return $this->handle($request, $handler);
-            }
-
-            /**
-             * @param ServerRequestInterface $request
-             * @param RequestHandlerInterface $handler
-             * @return mixed
-             */
-            protected function handle(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface
-            {
                 return ($this->middleware)($request, $this->factory->createResponse(), function (ServerRequestInterface $request) use ($handler) : ResponseInterface
                 {
                     return $handler->handle($request);
                 });
             }
-
         };
     }
 
@@ -114,16 +103,6 @@ class CallableDecorator implements MiddlewareInterface
      * @return ResponseInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
-    {
-        return $this->handle($request, $handler);
-    }
-
-    /**
-     * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
-     * @return mixed
-     */
-    protected function handle(ServerRequestInterface $request, RequestHandlerInterface $handler) : ResponseInterface
     {
         return ($this->middleware)($request, function (ServerRequestInterface $request) use ($handler) : ResponseInterface
         {
