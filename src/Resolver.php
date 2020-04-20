@@ -4,11 +4,13 @@
 namespace Lobster\Resolver;
 
 
+
 use Psr\Container\ContainerInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Lobster\Resolver\Decorators\LazyDecorator;
+use Lobster\Pipeline\Contracts\PipelineFactory;
 use Lobster\Resolver\Decorators\CallableDecorator;
 use Lobster\Resolver\Decorators\RequestHandlerDecorator;
 
@@ -19,20 +21,8 @@ use Lobster\Resolver\Decorators\RequestHandlerDecorator;
  */
 final class Resolver implements Contracts\Resolver
 {
-
-    /**
-     * @var ContainerInterface
-     */
     private ContainerInterface $container;
-
-    /**
-     * @var PipelineFactory
-     */
-    private Contracts\PipelineFactory $pipelineFactory;
-
-    /**
-     * @var ResponseFactoryInterface
-     */
+    private PipelineFactory $pipelineFactory;
     private ResponseFactoryInterface $responseFactory;
 
     /**
@@ -44,12 +34,12 @@ final class Resolver implements Contracts\Resolver
     public function __construct(
         ContainerInterface $container,
         ResponseFactoryInterface $responseFactory,
-        Contracts\PipelineFactory $pipelineFactory = null
+        PipelineFactory $pipelineFactory = null
     )
     {
         $this->container = $container;
         $this->responseFactory = $responseFactory;
-        $this->pipelineFactory = $pipelineFactory ?? new PipelineFactory();
+        $this->pipelineFactory = $pipelineFactory ?? new \Lobster\Pipeline\PipelineFactory();
     }
 
     /**
