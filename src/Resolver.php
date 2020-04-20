@@ -8,7 +8,6 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
-use Lobster\Pipeline\Contracts\PipelineFactory;
 use Lobster\Resolver\Decorators\LazyDecorator;
 use Lobster\Resolver\Decorators\CallableDecorator;
 use Lobster\Resolver\Decorators\RequestHandlerDecorator;
@@ -29,7 +28,7 @@ final class Resolver implements Contracts\Resolver
     /**
      * @var PipelineFactory
      */
-    private PipelineFactory $pipelineFactory;
+    private Contracts\PipelineFactory $pipelineFactory;
 
     /**
      * @var ResponseFactoryInterface
@@ -45,7 +44,7 @@ final class Resolver implements Contracts\Resolver
     public function __construct(
         ContainerInterface $container,
         ResponseFactoryInterface $responseFactory,
-        PipelineFactory $pipelineFactory = null
+        Contracts\PipelineFactory $pipelineFactory = null
     )
     {
         $this->container = $container;
