@@ -11,13 +11,28 @@ use Lobster\Type;
  * Class UnresolvableMiddlewareException
  * @package Lobster\Resolver
  */
-class UnresolvableMiddlewareException extends \RuntimeException {
+class UnresolvableMiddlewareException extends \RuntimeException 
+{
 
     /**
      * @param $middleware
      * @throws static
      */
-    public static function throw($middleware) : void {
-        throw new static('Unresolvable middleware: ' . Type::gettype($middleware));
+    public static function throw($middleware) : void 
+    {
+
+        $type = Type::gettype($middleware, true);
+
+        if ($type == Type::callable)
+        {
+            if(is_object($middleware))
+            {
+                $type = get_class($middleware);
+            }
+
+            $type = (new \ReflectionFunction($middleware))->getName();
+        }
+        
+        throw new static('Unresolvable middleware: ' . $type);
     }
 }
