@@ -52,27 +52,29 @@ final class Resolver implements Contracts\Resolver
     public function resolve($middleware): MiddlewareInterface
     {
 
-        if($this->isLazyLoadMiddleware($middleware))
+        if(return is_string($middleware) && $this->container->has($middleware)
+            && (is_subclass_of($middleware, MiddlewareInterface::class) ||
+                is_subclass_of($middleware, RequestHandlerInterface::class)))
         {
             return new LazyDecorator($middleware, $this->container);
         }
 
-        if($this->isMiddlewareInstance($middleware))
+        if($middleware instanceof MiddlewareInterface)
         {
             return $middleware;
         }
 
-        if($this->isRequestHandlerInstance($middleware))
+        if($middleware instanceof RequestHandlerInterface)
         {
             return new RequestHandlerDecorator($middleware);
         }
 
-        if($this->isIterable($middleware))
+        if(is_iterable($middleware))
         {
             return ($this->pipelineFactory)($middleware);
         }
         
-        if($this->isCallableMiddleware($middleware))
+        if(is_callable($middleware))
         {
 
             if (is_object($middleware))
@@ -140,80 +142,4 @@ final class Resolver implements Contracts\Resolver
         return Type::isInterface($refType->getName(), $type);
     }
 
-    /**
-     * @param \ReflectionType|null $type
-     * @return bool
-     */
-    private function isServerRequestType(?\ReflectionType $type) : bool
-    {
-        return $type instanceof \ReflectionNamedType
-            && Type::isInterface($type->getName(), ServerRequestInterface::class);
-    }
-
-    /**
-     * @param \ReflectionType|null $type
-     * @return bool
-     */
-    private function isResponseType(?\ReflectionType $type) : bool
-    {
-        return $type instanceof \ReflectionNamedType
-            && Type::isInterface($type->getName(), ServerRequestInterface::class);
-    }
-
-    /**
-     * @param \ReflectionType|null $type
-     * @return bool
-     */
-    private function isRequestHandlerType(?\ReflectionType $type) : bool
-    {
-        return $type instanceof \ReflectionNamedType
-            && is_subclass_of($type->getName(), RequestHandlerInterface::class);
-    }
-
-    /**
-     * @param $middleware
-     * @return bool
-     */
-    private function isMiddlewareInstance($middleware) : bool
-    {
-        return $middleware instanceof MiddlewareInterface;
-    }
-
-    /**
-     * @param $middleware
-     * @return bool
-     */
-    private function isLazyLoadMiddleware($middleware) : bool
-    {
-        return is_string($middleware) && $this->container->has($middleware)
-            && (is_subclass_of($middleware, MiddlewareInterface::class) ||
-                is_subclass_of($middleware, RequestHandlerInterface::class));
-    }
-
-    /**
-     * @param $middleware
-     * @return bool
-     */
-    private function isIterable($middleware) : bool
-    {
-        return is_iterable($middleware);
-    }
-
-    /**
-     * @param $middleware
-     * @return bool
-     */
-    private function isRequestHandlerInstance($middleware) : bool
-    {
-        return $middleware instanceof RequestHandlerInterface;
-    }
-
-    /**
-     * @param $middleware
-     * @return bool
-     */
-    private function isCallableMiddleware($middleware) : bool
-    {
-        return is_callable($middleware);
-    }
 }
