@@ -27,13 +27,13 @@ class CallableDecorator implements MiddlewareInterface
      * @param callable $middleware
      * @return MiddlewareInterface
      */
-    public static function route(callable $middleware) : MiddlewareInterface
+    public static function decorate(callable $middleware) : MiddlewareInterface
     {
         return new class($middleware) extends CallableDecorator
         {
            function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
            {
-               return ($this->middleware)($request);
+               return ($this->middleware)($request, $handler);
            }
         };
     }
