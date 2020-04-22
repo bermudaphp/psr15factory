@@ -8,7 +8,8 @@
   },
   "require": {
     "php": ">= 7.4",
-    "lobster-php/pipeline": "v1.0",
-    "psr/container": "1.*"
+    "lobster-php/pipeline": "^1.0",
+    "lobster-php/type": "^1.0",
+    "psr/container": "^1.*"
   }
 }
