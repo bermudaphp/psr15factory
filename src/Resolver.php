@@ -52,7 +52,7 @@ final class Resolver implements Contracts\Resolver
     public function resolve($middleware): MiddlewareInterface
     {
 
-        if(return is_string($middleware) && $this->container->has($middleware)
+        if(is_string($middleware) && $this->container->has($middleware)
             && (is_subclass_of($middleware, MiddlewareInterface::class) ||
                 is_subclass_of($middleware, RequestHandlerInterface::class)))
         {
