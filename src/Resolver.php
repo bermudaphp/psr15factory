@@ -71,7 +71,14 @@ final class Resolver implements Contracts\Resolver
 
         if(is_iterable($middleware))
         {
-            return ($this->pipelineFactory)($middleware);
+            $pipeline = ($this->pipelineFactory)();
+            
+            foreach ($middleware as $m)
+            {
+                $pipeline->pipe($this->resolve($m));
+            }
+            
+            return $pipeline;
         }
         
         if(is_callable($middleware))
