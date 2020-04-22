@@ -93,7 +93,7 @@ $middlewareInstance = $resolver->resolve(function(ServerRequestInterface $req, c
 $middlewareInstance instanceof MiddlewareInterface::class // true
 ```
 
-## Single Pass Middleware
+## Double Pass Middleware
 
 ```php
 
