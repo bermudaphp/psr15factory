@@ -21,7 +21,7 @@ class UnresolvableMiddlewareException extends \RuntimeException
     public static function throw($middleware) : void 
     {
 
-        $type = Type::gettype($middleware, true);
+        $type = Type::gettype($middleware, Type::objectAsClass);
 
         if ($type == Type::callable)
         {
