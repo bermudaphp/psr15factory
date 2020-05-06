@@ -54,7 +54,7 @@ final class Resolver implements Contracts\Resolver
 
         if(is_string($middleware) && $this->container->has($middleware))
         {
-            if(is_subclass_of($middleware, MiddlewareInterface::class ||
+            if(is_subclass_of($middleware, MiddlewareInterface::class) ||
                 is_subclass_of($middleware, RequestHandlerInterface::class))
             {
                 return new LazyDecorator($middleware, $this->container);
