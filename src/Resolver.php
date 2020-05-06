@@ -52,12 +52,17 @@ final class Resolver implements Contracts\Resolver
     public function resolve($middleware): MiddlewareInterface
     {
 
-        if(is_string($middleware) && $this->container->has($middleware)
-            && (is_subclass_of($middleware, MiddlewareInterface::class) ||
-                is_subclass_of($middleware, RequestHandlerInterface::class)))
+        if(is_string($middleware) && $this->container->has($middleware))
         {
-            return new LazyDecorator($middleware, $this->container);
+            if(is_subclass_of($middleware, MiddlewareInterface::class ||
+                is_subclass_of($middleware, RequestHandlerInterface::class))
+            {
+                return new LazyDecorator($middleware, $this->container);
+            }
+            
+            $middleware = $this->container->get($middleware);
         }
+           
 
         if($middleware instanceof MiddlewareInterface)
         {
