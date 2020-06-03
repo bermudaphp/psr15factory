@@ -101,7 +101,7 @@ final class Resolver implements Contracts\Resolver
             }
             
             if(!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
-               && $returnType->type() != 'Psr\Http\Message\ResponseInterface')
+               && $returnType->getName() != 'Psr\Http\Message\ResponseInterface')
             {
                 ExceptionFactory::invalidReturnType($returnType)->throw();
             }
@@ -143,7 +143,7 @@ final class Resolver implements Contracts\Resolver
 
         }
 
-        UnresolvableMiddlewareException::throw($middleware);
+        ExceptionFactory::unresolvable($middleware)->throw();
     }
 
     /**
