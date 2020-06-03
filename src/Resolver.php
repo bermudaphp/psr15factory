@@ -12,7 +12,6 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Lobster\Resolver\Decorators\LazyDecorator;
-use Lobster\Pipeline\Contracts\PipelineFactory;
 use Lobster\Resolver\Decorators\CallableDecorator;
 use Lobster\Resolver\Decorators\RequestHandlerDecorator;
 
@@ -24,8 +23,8 @@ use Lobster\Resolver\Decorators\RequestHandlerDecorator;
 final class Resolver implements Contracts\Resolver
 {
     private ContainerInterface $container;
-    private PipelineFactory $pipelineFactory;
     private ResponseFactoryInterface $responseFactory;
+    private Contracts\PipelineFactory $pipelineFactory;
 
     /**
      * Resolver constructor.
@@ -36,12 +35,12 @@ final class Resolver implements Contracts\Resolver
     public function __construct(
         ContainerInterface $container,
         ResponseFactoryInterface $responseFactory,
-        PipelineFactory $pipelineFactory = null
+        Contracts\PipelineFactory $pipelineFactory = null
     )
     {
         $this->container = $container;
         $this->responseFactory = $responseFactory;
-        $this->pipelineFactory = $pipelineFactory ?? new \Lobster\Pipeline\PipelineFactory();
+        $this->pipelineFactory = $pipelineFactory ?? new PipelineFactory();
     }
 
     /**
@@ -91,17 +90,23 @@ final class Resolver implements Contracts\Resolver
 
             if (is_object($middleware))
             {
-                $parameters = (new \ReflectionObject($middleware))
-                    ->getMethod('__invoke')->getParameters();
+                $method = (new \ReflectionObject($middleware))
+                    ->getMethod('__invoke');
             }
 
             else
             {
-                $parameters = (new \ReflectionFunction($middleware))
-                    ->getParameters();
+                $method = (new \ReflectionFunction($middleware))
+                    ->getMethod('__invoke');
+            }
+            
+            if(!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
+               && $returnType->type() != 'Psr\Http\Message\ResponseInterface')
+            {
+                ExceptionFactory::invalidReturnType($returnType)->throw();
             }
 
-            if (($count = count($parameters)) == 1)
+            if (($count = count($parameters = $method->getParameters())) == 1)
             {
                 if ($this->checkType($parameters[0], ServerRequestInterface::class))
                 {
@@ -133,6 +138,8 @@ final class Resolver implements Contracts\Resolver
                     CallableDecorator::doublePass($middleware, $this->responseFactory);
                 }
             }
+            
+            ExceptionFactory::invalidCallable($middleware, $parameters)->throw();
 
         }
 
