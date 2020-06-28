@@ -23,7 +23,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     private ResponseFactoryInterface $responseFactory;
     private Contracts\PipelineFactory $pipelineFactory;
     
-    public const $separator = '::';
+    public const $separator = '@';
 
     public function __construct(
         ContainerInterface $container,
@@ -55,7 +55,8 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 
                 if($this->container->has($service) && method_exists($service, $method))
                 {
-                    return new Decorator\ServiceDecorator($service, $method, $this->container);
+                    $any = [$this->container->get($service, $method)];
+                    goto: callback;
                 }
             }
         }
@@ -70,18 +71,6 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             return new RequestHandlerDecorator($any);
         }
 
-        if(is_iterable($any))
-        {
-            $pipeline = ($this->pipelineFactory)();
-            
-            foreach ($any as $item)
-            {
-                $pipeline->pipe($this->make($item));
-            }
-            
-            return $pipeline;
-        }
-        
         if(is_callable($any))
         {
             if (is_object($any))
@@ -92,6 +81,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             
             elseif(is_array($any))
             {
+                callback:
                 $method = new \ReflectionMethod($any[0], $any[1]);
             }
 
@@ -146,6 +136,18 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     return new Decorator\DoublePassDecorator($any, $this->responseFactory);
                 }
             }
+        }
+        
+        if(is_iterable($any))
+        {
+            $pipeline = ($this->pipelineFactory)();
+            
+            foreach ($any as $item)
+            {
+                $pipeline->pipe($this->make($item));
+            }
+            
+            return $pipeline;
         }
 
         MiddlewareFactoryException::notCreatable($any)->throw();
