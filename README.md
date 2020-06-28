@@ -77,7 +77,7 @@ class MyCallback
     }
 }
 
-$middlewre = $factory->make('MyCallback@methoodName');
+$middleware = $factory->make('MyCallback@methoodName');
 $middleware instanceof MiddlewareInterface::class // true
 ```
 
@@ -88,6 +88,21 @@ function(ServerRequestInterface $req): ResponseInterface ;
 function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface ;
 function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface ;
 function(ServerRequestInterface $req, callable $next): ResponseInterface ;
+```
+
+## MiddlewareFactoryStack 
+
+```php
+$stack = (new MiddlewareFactoryStack)->push($factory)->push(MyMiddlewareFactoryInterfaceInplementation);
+$middleware = $stack->make(static function(ServerRequestInterface $req, RequestHandlerInterface $next): ResponseInterface
+{
+    if()
+    {
+        return $next->handle($req);
+    }
+    
+    return new TextResponse('Hello World!');
+});
 ```
 
 
