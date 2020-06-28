@@ -93,7 +93,7 @@ function(ServerRequestInterface $req, callable $next): ResponseInterface ;
 ## MiddlewareFactoryStack 
 
 ```php
-$stack = (new MiddlewareFactoryStack)->push($factory)->push(new MyMiddlewareFactoryInterfaceInplementation);
+$stack = (new MiddlewareFactoryStack)->push($factory)->push(new MyMiddlewareFactoryInterfaceImplementation);
 $middleware = $stack->make(static function(ServerRequestInterface $req, RequestHandlerInterface $next): ResponseInterface
 {
     if()
