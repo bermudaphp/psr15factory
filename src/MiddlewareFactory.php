@@ -35,9 +35,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     }
 
     /**
-     * @param mixed $any
-     * @return MiddlewareInterface
-     * @throws MiddlewareFactoryException
+     * @inheritDoc
      */
     public function make($any): MiddlewareInterface
     {
@@ -141,6 +139,14 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
 
         ExceptionFactory::unresolvable($any)->throw();
+    }
+    
+    /**
+     * @inheritDoc
+     */
+    public function __invoke($any) : MiddlewareInterface 
+    {
+        return $this->make($any);
     }
 
     /**
