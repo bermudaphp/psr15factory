@@ -4,7 +4,7 @@ Psr-15 middleware factory
 ## Installation
 
 ```bash
-composer require lobster-php/middleware-factory
+composer require bermudaphp/psr15factory
 ```
 
 ## Usage
