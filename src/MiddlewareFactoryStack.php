@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -10,7 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 
 /**
  * Class MiddlewareFactoryStack
- * @package Lobster\MiddlewareFactory
+ * @package Bermuda\MiddlewareFactory
  */
 final class MiddlewareFactoryStack implements MiddlewareFactoryInterface
 {
