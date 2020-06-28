@@ -19,4 +19,9 @@ interface MiddlewareFactoryInterface
      * @throws MiddlewareFactoryException
      */
     public function make($any): MiddlewareInterface ;
+    
+    /**
+     * Alias for $this->make()
+     */
+    public function __invoke($any) : MiddlewareInterface ;
 }
