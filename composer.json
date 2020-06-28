@@ -1,15 +1,15 @@
 {
-  "name": "lobster-php/middleware-factory",
+  "name": "bermudaphp/middleware-factory",
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "Lobster\\MiddlewareFactory\\": "src/"
+      "Bermuda\\MiddlewareFactory\\": "src/"
     }
   },
   "require": {
     "php": ">= 7.4",
-    "lobster-php/pipeline": "^1.0",
-    "lobster-php/type": "^1.0",
+    "bermudaphp/pipeline": "^1.0",
+    "bermudaphp/type": "^1.0",
     "psr/container": "^1.0"
   }
 }
