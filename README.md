@@ -1,19 +1,19 @@
-# Resolver
-Psr-15 middleware resolver
+# MiddlewareFactory
+Psr-15 middleware factory
 
 ## Installation
 
 ```bash
-composer require lobster-php/resolver
+composer require lobster-php/middleware-factory
 ```
 
 ## Usage
 
 ```php
-$resolver = new Resolver($containerInterface, $responseFactoryInterface);
+$factory = new MiddlewareFactory($containerInterface, $responseFactoryInterface);
 ```
 
-## Lazy load MiddlewareInterface
+## Classname 
 
 ```php
 
@@ -32,13 +32,10 @@ class MyMiddleware implements MiddlewareInterface
     }
 }
 
-$middlewareInstance = $resolver->resolve(MyMiddleware::class);
-$middlewareInstance instanceof MyMiddleware::class // true
-```
 
-## Lazy load RequestHandlerInterface
+$middleware = $factory->make(MyMiddleware::class);
+$middleware instanceof MyMiddleware::class // true
 
-```php
 
 class MyHandler implements RequestHandlerInterface 
 {
@@ -55,58 +52,42 @@ class MyHandler implements RequestHandlerInterface
     }
 }
 
-$middlewareInstance = $resolver->resolve(MyHandler::class);
-$middlewareInstance instanceof MiddlewareInterface::class // true
+
+$middleware = $factory->make(MyHandler::class);
+$middleware instanceof MiddlewareInterface::class // true
+
 ```
 
 ## Callable Middleware
 
 ```php
 
-$middlewareInstance = $resolver->resolve(function(ServerRequestInterface $req)
+$middleware = $factory->make(static function(ServerRequestInterface $req)
 {
     return new TextResponse('Hello World!');
 });
-$middlewareInstance instanceof MiddlewareInterface::class // true
 
-or
+$middleware instanceof MiddlewareInterface::class // true
 
-$middlewareInstance = $resolver->resolve(function(ServerRequestInterface $req, RequestHandlerInterface $handler)
+class MyCallback
 {
-    return new TextResponse('Hello World!');
-});
-$middlewareInstance instanceof MiddlewareInterface::class // true
-```
-## Single Pass Middleware
-
-```php
-
-$middlewareInstance = $resolver->resolve(function(ServerRequestInterface $req, callable $next)
-{
-    if($cond)
+    public function methoodName(ServerRequestInterface $req) : 
     {
-        return $next($request)
+        return new TextResponse('Hello World');
     }
-    
-    return new TextResponse('Hello World!');
-});
-$middlewareInstance instanceof MiddlewareInterface::class // true
+}
+
+$middlewre = $factory->make('MyCallback@methoodName');
+$middleware instanceof MiddlewareInterface::class // true
 ```
 
-## Double Pass Middleware
+## Availables callback method  signature 
 
 ```php
-
-$middlewareInstance = $resolver->resolve(function(ServerRequestInterface $req, ResponseInterface $resp, callable $next)
-{
-    if($cond)
-    {
-        return $next($request)
-    }
-    
-    return $response;
-});
-$middlewareInstance instanceof MiddlewareInterface::class // true
+function(ServerRequestInterface $req): ResponseInterface 
+function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface
+function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface
+function(ServerRequestInterface $req, callable $next): ResponseInterface
 ```
 
 
