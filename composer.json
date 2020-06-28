@@ -1,5 +1,5 @@
 {
-  "name": "bermudaphp/middleware-factory",
+  "name": "bermudaphp/psr15factory",
   "license": "MIT",
   "autoload": {
     "psr-4": {
