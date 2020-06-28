@@ -44,60 +44,69 @@ final class Resolver implements Contracts\Resolver
     }
 
     /**
-     * @param mixed $middleware
+     * @param mixed $any
      * @return MiddlewareInterface
      * @throws UnresolvableMiddlewareException
      */
-    public function resolve($middleware): MiddlewareInterface
+    public function resolve($any): MiddlewareInterface
     {
-
-        if(is_string($middleware) && $this->container->has($middleware))
+        if(is_string($any) && $this->container->has($any))
         {
             if(is_subclass_of($middleware, MiddlewareInterface::class) ||
                 is_subclass_of($middleware, RequestHandlerInterface::class))
             {
-                return new LazyDecorator($middleware, $this->container);
+                return new ServiceDecorator($any, $this->container);
             }
             
-            $middleware = $this->container->get($middleware);
+            $any = $this->container->get($any);
         }
            
-
-        if($middleware instanceof MiddlewareInterface)
+        if($any instanceof MiddlewareInterface)
         {
-            return $middleware;
+            return $any;
+        }
+        
+        if($any instanceof RequestHandlerInterface)
+        {
+            return new RequestHandlerDecorator($any);
         }
 
-        if($middleware instanceof RequestHandlerInterface)
-        {
-            return new RequestHandlerDecorator($middleware);
-        }
-
-        if(is_iterable($middleware))
+        if(is_iterable($any))
         {
             $pipeline = ($this->pipelineFactory)();
             
-            foreach ($middleware as $m)
+            foreach ($any as $item)
             {
-                $pipeline->pipe($this->resolve($m));
+                $pipeline->pipe($this->resolve($item));
             }
             
             return $pipeline;
         }
         
-        if(is_callable($middleware))
+        if(is_callable($any))
         {
-
-            if (is_object($middleware))
+            if (is_object($any))
             {
-                $method = (new \ReflectionObject($middleware))
+                $method = (new \ReflectionObject($any))
                     ->getMethod('__invoke');
+            }
+            
+            elseif(is_array($any))
+            {
+                $method = new \ReflectionMethod($any[0], $any[1]);
             }
 
             else
             {
-                $method = (new \ReflectionFunction($middleware))
-                    ->getMethod('__invoke');
+                if(str_pos($any, '::') !== false)
+                {
+                    $method = new \ReflectionMethod($any);
+                }
+                
+                else
+                {
+                   $method = new \ReflectionFunction($any);
+                }
             }
             
             if(!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
@@ -110,7 +119,7 @@ final class Resolver implements Contracts\Resolver
             {
                 if ($this->checkType($parameters[0], ServerRequestInterface::class))
                 {
-                    return CallableDecorator::decorate($middleware);
+                    return new CallableDecorator($any);
                 }
             }
 
@@ -119,13 +128,13 @@ final class Resolver implements Contracts\Resolver
                 if ($this->checkType($parameters[0], ServerRequestInterface::class) &&
                     $this->checkType($parameters[1], RequestHandlerInterface::class))
                 {
-                    return CallableDecorator::decorate($middleware);
+                     return new CallableDecorator($any);
                 }
 
                 if ($this->checkType($parameters[0], ServerRequestInterface::class)
                     && $parameters[1]->isCallable())
                 {
-                    return CallableDecorator::singlePass($middleware);
+                    return new SinglePassDecorator($any);
                 }
             }
 
@@ -135,15 +144,12 @@ final class Resolver implements Contracts\Resolver
                     $this->checkType($parameters[0], ResponseInterface::class)
                     && $parameters[2]->isCallable())
                 {
-                    CallableDecorator::doublePass($middleware, $this->responseFactory);
+                    return new DoublePassDecorator($any, $this->responseFactory);
                 }
             }
-            
-            ExceptionFactory::invalidCallable($middleware, $parameters)->throw();
-
         }
 
-        ExceptionFactory::unresolvable($middleware)->throw();
+        ExceptionFactory::unresolvable($any)->throw();
     }
 
     /**
@@ -160,5 +166,4 @@ final class Resolver implements Contracts\Resolver
 
         return Type::isInterface($refType->getName(), $type);
     }
-
 }
