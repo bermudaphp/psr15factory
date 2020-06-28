@@ -1,37 +1,28 @@
 <?php
 
 
-namespace Lobster\Resolver;
+namespace Lobster\MiddlewareFactory;
 
 
 use Lobster\Type;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
-use Lobster\Resolver\Decorators\LazyDecorator;
-use Lobster\Resolver\Decorators\CallableDecorator;
-use Lobster\Resolver\Decorators\RequestHandlerDecorator;
 
 
 /**
- * Class Resolver
- * @package Lobster\Resolver
+ * Class MiddlewareFactory
+ * @package Lobster\MiddlewareFactory
  */
-final class Resolver implements Contracts\Resolver
+final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     private ContainerInterface $container;
     private ResponseFactoryInterface $responseFactory;
     private Contracts\PipelineFactory $pipelineFactory;
 
-    /**
-     * Resolver constructor.
-     * @param ContainerInterface $container
-     * @param PipelineFactoryInterface $pipelineFactory
-     * @param ResponseFactoryInterface $responseFactory
-     */
     public function __construct(
         ContainerInterface $container,
         ResponseFactoryInterface $responseFactory,
@@ -46,16 +37,16 @@ final class Resolver implements Contracts\Resolver
     /**
      * @param mixed $any
      * @return MiddlewareInterface
-     * @throws UnresolvableMiddlewareException
+     * @throws MiddlewareFactoryException
      */
-    public function resolve($any): MiddlewareInterface
+    public function make($any): MiddlewareInterface
     {
         if(is_string($any) && $this->container->has($any))
         {
             if(is_subclass_of($middleware, MiddlewareInterface::class) ||
                 is_subclass_of($middleware, RequestHandlerInterface::class))
             {
-                return new ServiceDecorator($any, $this->container);
+                return new Decorator\ServiceDecorator($any, $this->container);
             }
             
             $any = $this->container->get($any);
@@ -119,7 +110,7 @@ final class Resolver implements Contracts\Resolver
             {
                 if ($this->checkType($parameters[0], ServerRequestInterface::class))
                 {
-                    return new CallableDecorator($any);
+                    return new Decorator\CallbackDecorator($any);
                 }
             }
 
@@ -128,13 +119,13 @@ final class Resolver implements Contracts\Resolver
                 if ($this->checkType($parameters[0], ServerRequestInterface::class) &&
                     $this->checkType($parameters[1], RequestHandlerInterface::class))
                 {
-                     return new CallableDecorator($any);
+                     return new Decorator\CallbackDecorator($any);
                 }
 
                 if ($this->checkType($parameters[0], ServerRequestInterface::class)
                     && $parameters[1]->isCallable())
                 {
-                    return new SinglePassDecorator($any);
+                    return new Decorator\SinglePassDecorator($any);
                 }
             }
 
@@ -144,7 +135,7 @@ final class Resolver implements Contracts\Resolver
                     $this->checkType($parameters[0], ResponseInterface::class)
                     && $parameters[2]->isCallable())
                 {
-                    return new DoublePassDecorator($any, $this->responseFactory);
+                    return new Decorator\DoublePassDecorator($any, $this->responseFactory);
                 }
             }
         }
