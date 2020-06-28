@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory\Decorator;
+namespace Bermuda\MiddlewareFactory\Decorator;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -12,8 +12,8 @@ use Psr\Http\Message\ResponseFactoryInterface;
 
 
 /**
- * Class CallabackDecorator
- * @package Lobster\MiddlewareFactory\Decorator
+ * Class CallbackDecorator
+ * @package Bermuda\MiddlewareFactory\Decorator
  */
 class CallbackDecorator implements MiddlewareInterface
 {
