@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory\Decorator;
+namespace Bermuda\MiddlewareFactory\Decorator;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -13,7 +13,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 
 /**
  * Class DoublePassDecorator
- * @package Lobster\MiddlewareFactory\Decorator
+ * @package Bermuda\MiddlewareFactory\Decorator
  */
 final class DoublePassDecorator extends CallbackDecorator
 {
@@ -30,7 +30,7 @@ final class DoublePassDecorator extends CallbackDecorator
    */
   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
   {
-      return ($this->middleware)($request, $this->factory->createResponse(), static function (ServerRequestInterface $request) use ($handler) : ResponseInterface
+      return ($this->middleware)($request, $this->factory->createResponse(), static function (ServerRequestInterface $request) use ($handler): ResponseInterface
       {
           return $handler->handle($request);
       });
