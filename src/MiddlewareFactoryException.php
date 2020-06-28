@@ -1,15 +1,15 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 
-use Lobster\Type;
+use Bermuda\Type;
 
 
 /**
  * Class MiddlewareFactoryException
- * @package Lobster\MiddlewareFactory
+ * @package Bermuda\MiddlewareFactory
  */
 class MiddlewareFactoryException extends \RuntimeException 
 {
