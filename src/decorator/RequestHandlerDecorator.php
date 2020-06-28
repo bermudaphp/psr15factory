@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\Resolver\Decorators;
+namespace Lobster\MiddlewareFactory\Decorator;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -12,28 +12,19 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Class RequestHandlerDecorator
- * @package Lobster\Resolver\Decorators
+ * @package Lobster\MiddlewareFactory\Decorator
  */
 class RequestHandlerDecorator implements RequestHandlerInterface, MiddlewareInterface
 {
-
-    /**
-     * @var RequestHandlerInterface
-     */
     private RequestHandlerInterface $handler;
 
-    /**
-     * RequestHandlerDecorator constructor.
-     * @param RequestHandlerInterface $handler
-     */
     public function __construct(RequestHandlerInterface $handler)
     {
         $this->handler = $handler;
     }
 
     /**
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
+     * @inheritDoc
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -41,9 +32,7 @@ class RequestHandlerDecorator implements RequestHandlerInterface, MiddlewareInte
     }
 
     /**
-     * @param ServerRequestInterface $request
-     * @param RequestHandlerInterface $handler
-     * @return ResponseInterface
+     * @inheritDoc
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
