@@ -32,7 +32,7 @@ class MiddlewareFactoryException extends \RuntimeException
 
         if ($type == Type::callable)
         {
-            $type = static::getTypeForCallable($type);
+            $type = static::getTypeForCallable($any);
         }
         
         return new static('Cannot create middleware for this type: ' . $type);
