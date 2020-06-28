@@ -1,9 +1,9 @@
 {
-  "name": "lobster-php/resolver",
+  "name": "lobster-php/middleware-factory",
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "Lobster\\Resolver\\": "src/"
+      "Lobster\\MiddlewareFactory\\": "src/"
     }
   },
   "require": {
