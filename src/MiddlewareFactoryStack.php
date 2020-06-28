@@ -21,7 +21,8 @@ final class MiddlewareFactoryStack implements MiddlewareFactoryInterface
     
     public function push(MiddlewareFactoryInterface $factory): self
     {
-        return $this->factories[] = $factory;
+        $this->factories[] = $factory;
+        return $this;
     }
 
     /**
