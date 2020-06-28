@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory\Decorator;
+namespace Bermuda\MiddlewareFactory\Decorator;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -12,7 +12,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Class RequestHandlerDecorator
- * @package Lobster\MiddlewareFactory\Decorator
+ * @package Bermuda\MiddlewareFactory\Decorator
  */
 class RequestHandlerDecorator implements RequestHandlerInterface, MiddlewareInterface
 {
