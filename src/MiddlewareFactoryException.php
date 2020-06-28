@@ -19,7 +19,7 @@ class MiddlewareFactoryException extends \RuntimeException
      */
     public function throw() : void
     {
-        throw this;
+        throw $this;
     }
     
     /**
