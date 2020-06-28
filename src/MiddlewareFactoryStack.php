@@ -4,6 +4,7 @@
 namespace Lobster\MiddlewareFactory;
 
 
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 
 
@@ -13,6 +14,9 @@ use Psr\Http\Server\MiddlewareInterface;
  */
 final class MiddlewareFactoryStack implements MiddlewareFactoryInterface
 {
+    /**
+     * @var MiddlewareFactoryInterface[]
+     */
     private array $factories = [];
     
     public function push(MiddlewareFactoryInterface $factory): self
