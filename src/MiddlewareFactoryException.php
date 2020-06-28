@@ -48,7 +48,7 @@ class MiddlewareFactoryException extends \RuntimeException
         return new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType);
     }
     
-    private static function geTypeForCallable(callable $type) : string
+    private static function getTypeForCallable(callable $type) : string
     {
         if(is_object($any))
         {
