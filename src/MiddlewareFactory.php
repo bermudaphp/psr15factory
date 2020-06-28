@@ -1,10 +1,10 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 
-use Lobster\Type;
+use Bermuda\Type;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -15,7 +15,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 
 /**
  * Class MiddlewareFactory
- * @package Lobster\MiddlewareFactory
+ * @package Bermuda\MiddlewareFactory
  */
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
