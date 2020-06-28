@@ -66,7 +66,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             
             foreach ($any as $item)
             {
-                $pipeline->pipe($this->resolve($item));
+                $pipeline->pipe($this->make($item));
             }
             
             return $pipeline;
@@ -101,7 +101,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             if(!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
                && $returnType->getName() != 'Psr\Http\Message\ResponseInterface')
             {
-                ExceptionFactory::invalidReturnType($returnType)->throw();
+                MiddlewareFactoryException::invalidReturnType($any, $returnType)->throw();
             }
 
             if (($count = count($parameters = $method->getParameters())) == 1)
@@ -138,7 +138,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             }
         }
 
-        ExceptionFactory::unresolvable($any)->throw();
+        MiddlewareFactoryException::notCreatable($any)->throw();
     }
     
     /**
