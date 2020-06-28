@@ -1,6 +1,3 @@
-# psr15factory
-Psr-15 middleware factory
-
 ## Installation
 
 ```bash
