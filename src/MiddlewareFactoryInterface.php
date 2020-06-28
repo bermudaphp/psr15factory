@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Lobster\MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 
 use Psr\Http\Server\MiddlewareInterface;
@@ -9,7 +9,7 @@ use Psr\Http\Server\MiddlewareInterface;
 
 /**
  * Interface MiddlewareFactoryInterface
- * @package Lobster\MiddlewareFactory
+ * @package Bermuda\MiddlewareFactory
  */
 interface MiddlewareFactoryInterface
 {
