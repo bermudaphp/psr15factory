@@ -15,7 +15,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
  * Class DoublePassDecorator
  * @package Lobster\MiddlewareFactory\Decorator
  */
-class DoublePassDecorator extends CallbackDecorator
+final class DoublePassDecorator extends CallbackDecorator
 {
   private ResponseFactoryInterface $factory;
   
@@ -25,16 +25,14 @@ class DoublePassDecorator extends CallbackDecorator
       parent::__construct($callback);
   }
 
-            /**
-             * @param ServerRequestInterface $request
-             * @param RequestHandlerInterface $handler
-             * @return ResponseInterface
-             */
-            public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
-            {
-                return ($this->middleware)($request, $this->factory->createResponse(), function (ServerRequestInterface $request) use ($handler) : ResponseInterface
-                {
-                    return $handler->handle($request);
-                });
-            }
+  /**
+   * @inheritDoc
+   */
+  public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+  {
+      return ($this->middleware)($request, $this->factory->createResponse(), static function (ServerRequestInterface $request) use ($handler) : ResponseInterface
+      {
+          return $handler->handle($request);
+      });
+  }
 }
