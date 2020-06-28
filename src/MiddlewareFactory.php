@@ -22,6 +22,8 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     private ContainerInterface $container;
     private ResponseFactoryInterface $responseFactory;
     private Contracts\PipelineFactory $pipelineFactory;
+    
+    public const $separator = '::';
 
     public function __construct(
         ContainerInterface $container,
@@ -39,15 +41,23 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
      */
     public function make($any): MiddlewareInterface
     {
-        if(is_string($any) && $this->container->has($any))
-        {
-            if(is_subclass_of($middleware, MiddlewareInterface::class) ||
-                is_subclass_of($middleware, RequestHandlerInterface::class))
+        if(is_string($any))
+        { 
+            if($this->container->has($any) && (is_subclass_of($any, MiddlewareInterface::class) ||
+                is_subclass_of($any, RequestHandlerInterface::class)))
             {
-                return new Decorator\ServiceDecorator($any, $this->container);
+                return $this->container->get($any);
             }
             
-            $any = $this->container->get($any);
+            if(str_pos($any, self::separator) !== false)
+            {   
+                list($service, $method) = explode(self::separator, $any, 2);
+                
+                if($this->container->has($service) && method_exists($service, $method))
+                {
+                    return new Decorator\ServiceDecorator($service, $method, $this->container);
+                }
+            }
         }
            
         if($any instanceof MiddlewareInterface)
