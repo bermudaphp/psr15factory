@@ -59,6 +59,13 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     goto: callback;
                 }
             }
+            
+            if(is_callable($any))
+            {
+                goto: str_callback;
+            }
+            
+            goto: end;
         }
            
         if($any instanceof MiddlewareInterface)
@@ -94,7 +101,8 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 
                 else
                 {
-                   $method = new \ReflectionFunction($any);
+                    str_callback:
+                    $method = new \ReflectionFunction($any);
                 }
             }
             
@@ -150,6 +158,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             return $pipeline;
         }
 
+        end:
         MiddlewareFactoryException::notCreatable($any)->throw();
     }
     
