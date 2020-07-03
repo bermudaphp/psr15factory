@@ -43,10 +43,25 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         if(is_string($any))
         { 
-            if($this->container->has($any) && (is_subclass_of($any, MiddlewareInterface::class) ||
-                is_subclass_of($any, RequestHandlerInterface::class)))
+            if($this->container->has($any))
             {
-                return $this->container->get($any);
+                try
+                {
+                    if(is_subclass_of($any, MiddlewareInterface::class))
+                    {
+                        return $this->container->get($any);
+                    }
+                
+                    if(is_subclass_of($any, RequestHandlerInterface::class))
+                    {
+                        return new RequestHandlerDecorator($this->container->get($any));
+                    }
+                }
+                
+                catch(\Throwable $e)
+                {
+                    MiddlewareFactoryException::fromPrevios($e)->throw();
+                }
             }
             
             if(str_pos($any, self::separator) !== false)
