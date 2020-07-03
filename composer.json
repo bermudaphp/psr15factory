@@ -9,7 +9,7 @@
   "require": {
     "php": ">= 7.4",
     "bermudaphp/pipeline": "^1.0",
-    "bermudaphp/type": "^1.0",
+    "bermudaphp/checktype": "^1.0",
     "psr/container": "^1.0"
   }
 }
