@@ -21,7 +21,7 @@ interface MiddlewareFactoryInterface
     public function make($any): MiddlewareInterface ;
     
     /**
-     * Alias for $this->make()
+     * Alias for self::make 
      */
     public function __invoke($any) : MiddlewareInterface ;
 }
