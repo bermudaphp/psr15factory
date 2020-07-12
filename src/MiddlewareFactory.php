@@ -21,14 +21,14 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     private ContainerInterface $container;
     private ResponseFactoryInterface $responseFactory;
-    private Contracts\PipelineFactory $pipelineFactory;
+    private PipelineFactoryInterface $pipelineFactory;
     
     public const $separator = '@';
 
     public function __construct(
         ContainerInterface $container,
         ResponseFactoryInterface $responseFactory,
-        Contracts\PipelineFactory $pipelineFactory = null
+        PipelineFactoryInterface $pipelineFactory = null
     )
     {
         $this->container = $container;
