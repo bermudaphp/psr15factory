@@ -25,7 +25,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     private ResponseFactoryInterface $responseFactory;
     private PipelineFactoryInterface $pipelineFactory;
     
-    public const $separator = '@';
+    public const separator = '@';
 
     public function __construct(
         ContainerInterface $container,
