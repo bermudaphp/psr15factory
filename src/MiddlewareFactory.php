@@ -55,12 +55,12 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             if ($this->container->has($any) && is_subclass_of($any, RequestHandlerInterface::class))
             {
-                return new RequestHandlerDecorator($this->container->get($any));
+                return new Decorator\RequestHandlerDecorator($this->container->get($any));
             }
 
             if (str_contains($any, self::separator) !== false)
             {   
-               list($service, $method) = explode(self::separator, $any, 2);
+               [$service, $method] = explode(self::separator, $any, 2);
 
                if ($this->container->has($service) && method_exists($service, $method))
                {
@@ -84,7 +84,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         
         if ($any instanceof RequestHandlerInterface)
         {
-            return new RequestHandlerDecorator($any);
+            return new Decorator\RequestHandlerDecorator($any);
         }
 
         if (is_callable($any))
