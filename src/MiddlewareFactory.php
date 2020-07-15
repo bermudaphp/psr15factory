@@ -4,7 +4,7 @@
 namespace Bermuda\MiddlewareFactory;
 
 
-use Bermuda\Type;
+use Bermuda\CheckType\Type;
 use Bermuda\Pipeline\PipelineFactory;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -43,59 +43,52 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
      */
     public function make($any): MiddlewareInterface
     {
-        if(is_string($any))
-        { 
-            if($this->container->has($any))
+        if (is_string($any))
+        {
+            if (is_subclass_of($any, MiddlewareInterface::class))
             {
-                try
-                {
-                    if(is_subclass_of($any, MiddlewareInterface::class))
-                    {
-                        return $this->container->get($any);
-                    }
-                
-                    if(is_subclass_of($any, RequestHandlerInterface::class))
-                    {
-                        return new RequestHandlerDecorator($this->container->get($any));
-                    }
-                }
-                
-                catch(\Throwable $e)
-                {
-                    MiddlewareFactoryException::fromPrevios($e)->throw();
-                }
+                return $this->service($any);
+            }
+
+            if (is_subclass_of($any, RequestHandlerInterface::class))
+            {
+                return new RequestHandlerDecorator($this->container->get($any));
             }
             
-            if(str_pos($any, self::separator) !== false)
+            if (str_contains($any, self::separator) !== false)
             {   
                 list($service, $method) = explode(self::separator, $any, 2);
-                
-                if($this->container->has($service) && method_exists($service, $method))
+               
+                $service = $this->service($service);
+               
+                if (method_exists($service, $method))
                 {
-                    $any = [$this->container->get($service, $method)];
-                    goto: callback;
+                    $any = [$service, $method];
+                    goto callback;
                 }
+                
+                goto end;
             }
             
-            if(is_callable($any))
+            if (is_callable($any))
             {
-                goto: str_callback;
+                goto str_callback;
             }
             
-            goto: end;
+            goto end;
         }
            
-        if($any instanceof MiddlewareInterface)
+        if ($any instanceof MiddlewareInterface)
         {
             return $any;
         }
         
-        if($any instanceof RequestHandlerInterface)
+        if ($any instanceof RequestHandlerInterface)
         {
             return new RequestHandlerDecorator($any);
         }
 
-        if(is_callable($any))
+        if (is_callable($any))
         {
             if (is_object($any))
             {
@@ -103,7 +96,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     ->getMethod('__invoke');
             }
             
-            elseif(is_array($any))
+            elseif (is_array($any))
             {
                 callback:
                 $method = new \ReflectionMethod($any[0], $any[1]);
@@ -111,22 +104,23 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             else
             {
-                if(str_pos($any, '::') !== false)
+                str_callback:
+                
+                if (str_contains($any, '::') !== false)
                 {
                     $method = new \ReflectionMethod($any);
                 }
                 
                 else
                 {
-                    str_callback:
                     $method = new \ReflectionFunction($any);
                 }
             }
-            
-            if(!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
-               && $returnType->getName() != 'Psr\Http\Message\ResponseInterface')
+
+            if (!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
+               || $returnType->getName() != 'Psr\Http\Message\ResponseInterface')
             {
-                MiddlewareFactoryException::invalidReturnType($any, $returnType->getName())->throw();
+                MiddlewareFactoryException::invalidReturnType($any, 'void')->throw();
             }
 
             if (($count = count($parameters = $method->getParameters())) == 1)
@@ -163,9 +157,9 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             }
         }
         
-        if(is_iterable($any))
+        if (is_iterable($any))
         {
-            $pipeline = ($this->pipelineFactory)();
+            $pipeline = $this->pipelineFactory->make();
             
             foreach ($any as $item)
             {
@@ -185,6 +179,24 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     public function __invoke($any) : MiddlewareInterface 
     {
         return $this->make($any);
+    }
+    
+    /**
+     * @param string $service
+     * @return object
+     * @throws MiddlewareFactoryException
+     */
+    private function service(string $service): object 
+    {
+        try
+        {
+            return $this->container->get($service);
+        }
+
+        catch (\Throwable $e)
+        {
+            MiddlewareFactoryException::fromPrevios($e)->throw();
+        }
     }
 
     /**
