@@ -15,6 +15,9 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 
 
+use function Bermuda\str_contains;
+
+
 /**
  * Class MiddlewareFactory
  * @package Bermuda\MiddlewareFactory
@@ -45,29 +48,25 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         if (is_string($any))
         {
-            if (is_subclass_of($any, MiddlewareInterface::class))
+            if ($this->container->has($service) && is_subclass_of($any, MiddlewareInterface::class))
             {
                 return $this->service($any);
             }
 
-            if (is_subclass_of($any, RequestHandlerInterface::class))
+            if ($this->container->has($service) && is_subclass_of($any, RequestHandlerInterface::class))
             {
                 return new RequestHandlerDecorator($this->container->get($any));
             }
-            
+
             if (str_contains($any, self::separator) !== false)
             {   
-                list($service, $method) = explode(self::separator, $any, 2);
+               list($service, $method) = explode(self::separator, $any, 2);
                
-                $service = $this->service($service);
-               
-                if (method_exists($service, $method))
-                {
-                    $any = [$service, $method];
+               if ($this->container->has($service) && method_exists($service, $method))
+               {
+                    $any = [$this->service($service), $method];
                     goto callback;
-                }
-                
-                goto end;
+               }
             }
             
             if (is_callable($any))
@@ -104,8 +103,6 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             else
             {
-                str_callback:
-                
                 if (str_contains($any, '::') !== false)
                 {
                     $method = new \ReflectionMethod($any);
@@ -113,6 +110,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 
                 else
                 {
+                    str_callback:
                     $method = new \ReflectionFunction($any);
                 }
             }
@@ -180,13 +178,13 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         return $this->make($any);
     }
-    
+
     /**
      * @param string $service
      * @return object
      * @throws MiddlewareFactoryException
      */
-    private function service(string $service): object 
+    private function service(string $service): object
     {
         try
         {
