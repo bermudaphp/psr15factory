@@ -4,7 +4,7 @@
 namespace Bermuda\MiddlewareFactory;
 
 
-use Bermuda\Type;
+use Bermuda\CheckType\Type;
 
 
 /**
@@ -40,7 +40,7 @@ class MiddlewareFactoryException extends \RuntimeException
      * @param $any
      * @return static
      */
-    public static notCreatable($any) : self
+    public static notCreatable($any): self
     {
         $type = Type::gettype($any, Type::objectAsClass);
 
@@ -57,7 +57,7 @@ class MiddlewareFactoryException extends \RuntimeException
      * @param string $returnType
      * @return static
      */
-    public static invalidReturnType(callable $any, string $returnType) : void 
+    public static invalidReturnType(callable $any, string $returnType): void 
     {
         return new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType);
     }
