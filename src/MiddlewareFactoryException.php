@@ -17,7 +17,7 @@ class MiddlewareFactoryException extends \RuntimeException
      * @param $middleware
      * @throws static
      */
-    public function throw() : void
+    public function throw(): void
     {
         throw $this;
     }
