@@ -9,7 +9,6 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 
 
-
 final class ConfigProvider
 {
     public function __invoke(): array
@@ -17,7 +16,7 @@ final class ConfigProvider
         return ['dependencies' => 
             ['factories' => [MiddlewareFactoryInterface::class => function(ContainerInterface $c)
             {
-                return new MiddlewareFactory($c, $c->get(ResponseFactoryInterface::class), $c->get(MiddlewareFactoryInterface::class));
+                return new MiddlewareFactory($c, $c->get(ResponseFactoryInterface::class), $c->get(PipelineFactoryInterface::class));
             }]
         ]];
     }
