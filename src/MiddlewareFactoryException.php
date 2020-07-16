@@ -79,6 +79,6 @@ class MiddlewareFactoryException extends \RuntimeException
             return (new \ReflectionMethod($any))->getName();
         }
         
-        return new (\ReflectionFunction($any))->getName();
+        return (new \ReflectionFunction($any))->getName();
     }
 }
