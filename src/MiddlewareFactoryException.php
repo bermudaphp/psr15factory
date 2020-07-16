@@ -33,14 +33,14 @@ class MiddlewareFactoryException extends \RuntimeException
         $self->file = $e->getFile();
         $self->line = $e->getLine();
         
-        return $self
+        return $self;
     }
     
     /**
      * @param $any
      * @return static
      */
-    public static notCreatable($any): self
+    public static function notCreatable($any): self
     {
         $type = Type::gettype($any, Type::objectAsClass);
 
@@ -57,7 +57,7 @@ class MiddlewareFactoryException extends \RuntimeException
      * @param string $returnType
      * @return static
      */
-    public static invalidReturnType(callable $any, string $returnType): void 
+    public static function invalidReturnType(callable $any, string $returnType): self
     {
         return new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType);
     }
@@ -71,14 +71,14 @@ class MiddlewareFactoryException extends \RuntimeException
             
         if(is_array($any))
         {
-            return new \ReflectionMethod($any[0], $any[1])->getName();
+            return (new \ReflectionMethod($any[0], $any[1]))->getName();
         }
         
         if(str_pos($any, '::') !== false)
         {
-            return new \ReflectionMethod($any)->getName();
+            return (new \ReflectionMethod($any))->getName();
         }
         
-        return new \ReflectionFunction($any)->getName();
+        return new (\ReflectionFunction($any))->getName();
     }
 }
