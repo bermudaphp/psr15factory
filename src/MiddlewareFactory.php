@@ -60,7 +60,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             if (str_contains($any, self::separator) !== false)
             {   
-               [$service, $method] = explode(self::separator, $any, 2);
+               list($service, $method) = explode(self::separator, $any, 2);
 
                if ($this->container->has($service) && method_exists($service, $method))
                {
