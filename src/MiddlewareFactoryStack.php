@@ -34,7 +34,7 @@ final class MiddlewareFactoryStack implements MiddlewareFactoryInterface
         {
             try
             {
-                return $factory->make($any)
+                return $factory->make($any);
             }
             
             catch(MiddlewareFactoryException $e)
