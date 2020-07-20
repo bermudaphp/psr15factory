@@ -13,7 +13,7 @@ use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
 
 /**
  * Class PathMiddleware
- * @package Bermuda\MiddlewareFactory\Decorator
+ * @package Bermuda\MiddlewareFactory
  */
 class PathMiddleware implements MiddlewareInterface
 {
