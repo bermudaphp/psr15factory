@@ -8,29 +8,24 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
 
 
 /**
  * Class PathDecorator
  * @package Bermuda\MiddlewareFactory\Decorator
  */
-class PathDecorator implements RequestHandlerInterface, MiddlewareInterface
+class PathDecorator implements MiddlewareInterface
 {
     private $handler;
+    private string $prefix;
     private MiddlewareFactoryInterface $factory;
 
-    public function __construct(MiddlewareFactoryInterface $factory, $handler)
+    public function __construct(string $prefix, MiddlewareFactoryInterface $factory, $handler)
     {
         $this->handler = $handler;
         $this->factory = $factory;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function handle(ServerRequestInterface $request): ResponseInterface
-    {
-        return $this->handler->handle($request);
+        $this->prefix  = empty($prefix) ? '/' : $prefix;
     }
 
     /**
@@ -38,6 +33,26 @@ class PathDecorator implements RequestHandlerInterface, MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        return $this->handler->handle($request);
+        if($this->match((string) $request->getUri()))
+        {
+            return $this->factory->make($this->handler)->process($request, $handler);
+        }
+        
+        return $handler->process($request);
+    }
+    
+    private function match(string $path): bool
+    {
+        $segments = explode('/', ltrim($this->prefix, '/'));
+        
+        foreach(explode('/', ltrim($path, '/')) as $i => $segment)
+        {
+            if(strcasecmp($segments[$i], $segment) != 0)
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }
