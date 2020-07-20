@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Bermuda\MiddlewareFactory\Decorator;
+namespace Bermuda\MiddlewareFactory;
 
 
 use Psr\Http\Message\ResponseInterface;
@@ -38,7 +38,7 @@ class PathMiddleware implements MiddlewareInterface
             return $this->factory->make($this->handler)->process($request, $handler);
         }
         
-        return $handler->process($request);
+        return $handler->process($request, $handler);
     }
     
     private function match(string $path): bool
