@@ -12,10 +12,10 @@ use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
 
 
 /**
- * Class PathDecorator
+ * Class PathMiddleware
  * @package Bermuda\MiddlewareFactory\Decorator
  */
-class PathDecorator implements MiddlewareInterface
+class PathMiddleware implements MiddlewareInterface
 {
     private $handler;
     private string $prefix;
