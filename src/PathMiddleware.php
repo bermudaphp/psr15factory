@@ -33,7 +33,7 @@ class PathMiddleware implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        if($this->match((string) $request->getUri()))
+        if($this->match((string) $request->getUri()->getPath()))
         {
             return $this->factory->make($this->handler)->process($request, $handler);
         }
