@@ -38,7 +38,7 @@ class PathMiddleware implements MiddlewareInterface
             return $this->factory->make($this->handler)->process($request, $handler);
         }
         
-        return $handler->process($request, $handler);
+        return $handler->handle($request);
     }
     
     private function match(string $path): bool
