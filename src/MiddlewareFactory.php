@@ -114,11 +114,26 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     $method = new \ReflectionFunction($any);
                 }
             }
-
-            if (!($returnType = $method->getReturnType()) instanceof \ReflectionNamedType
-               || $returnType->getName() != 'Psr\Http\Message\ResponseInterface')
+            
+            $returnType = $method->getReturnType();
+            
+            if (!$returnType instanceof \ReflectionNamedType || ($returnType->getName() != 'Psr\Http\Message\ResponseInterface' && 
+                                                                 $returnType->getName() != MiddlewareInterface::class))
             {
                 MiddlewareFactoryException::invalidReturnType($any, 'void')->throw();
+            }
+            
+            if ($returnType->getName() == MiddlewareInterface::class)
+            {
+                try
+                {
+                    return $any($this->container);
+                }
+                
+                catch (\Throwable $e)
+                {
+                    MiddlewareFactoryException::fromPrevios($e, $any)->throw();
+                }
             }
 
             if (($count = count($parameters = $method->getParameters())) == 1)
@@ -174,7 +189,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     /**
      * @inheritDoc
      */
-    public function __invoke($any) : MiddlewareInterface 
+    public function __invoke($any): MiddlewareInterface 
     {
         return $this->make($any);
     }
@@ -193,7 +208,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
         catch (\Throwable $e)
         {
-            MiddlewareFactoryException::fromPrevios($e)->throw();
+            MiddlewareFactoryException::fromPrevios($e, $service)->throw();
         }
     }
 
