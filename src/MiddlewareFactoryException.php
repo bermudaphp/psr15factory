@@ -13,6 +13,8 @@ use Bermuda\CheckType\Type;
  */
 class MiddlewareFactoryException extends \RuntimeException 
 {
+    protected $middleware;
+    
     /**
      * @param $middleware
      * @throws static
@@ -23,17 +25,36 @@ class MiddlewareFactoryException extends \RuntimeException
     }
     
     /**
+     * @param mixed $middleware
+     * @return static
+     */
+    public function setMiddleware($middleware): self
+    {
+        $this->middleware = $middleware;
+        return $this;
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getMiddleware()
+    {
+        $this->middleware = $middleware;
+        return $this;
+    }
+    
+    /**
      * @param \Throwable $e
      * @return static
      */
-    public static function fromPrevios(\Throwable $e): self
+    public static function fromPrevios(\Throwable $e, $middleware): self
     {
         $self = new static($e->getMessage(), $e->getCode(), $e);
         
         $self->file = $e->getFile();
         $self->line = $e->getLine();
         
-        return $self;
+        return $self->setMiddleware($middleware);
     }
     
     /**
@@ -49,7 +70,7 @@ class MiddlewareFactoryException extends \RuntimeException
             $type = static::getTypeForCallable($any);
         }
         
-        return new static('Cannot create middleware for this type: ' . $type);
+        return (new static('Cannot create middleware for this type: ' . $type))->setMiddleware($any);
     }
     
     /**
@@ -59,7 +80,7 @@ class MiddlewareFactoryException extends \RuntimeException
      */
     public static function invalidReturnType(callable $any, string $returnType): self
     {
-        return new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType);
+        return( new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType))->setMiddleware($any);
     }
     
     private static function getTypeForCallable(callable $type) : string
