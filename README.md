@@ -55,6 +55,20 @@ $middleware instanceof MiddlewareInterface::class // true
 
 ```
 
+## Lazy Middleware
+
+```php
+
+$middleware = $factory->make(static function(ContainerInterface $c) use ($redirectPath, $permanent): MiddlewareInterface
+{         
+    return new RedirectMiddleware($redirectPath, $c->get(ResponseFactoryInterface::class), $permanent);
+});
+
+$middleware instanceof MiddlewareInterface::class // true
+$middleware instanceof RedirectMiddleware::class // true
+
+```
+
 ## Callable Middleware
 
 ```php
