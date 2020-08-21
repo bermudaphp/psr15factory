@@ -104,16 +104,37 @@ function(ServerRequestInterface $req, callable $next): ResponseInterface ;
 ## MiddlewareFactoryStack 
 
 ```php
-$stack = (new MiddlewareFactoryStack)->push($factory)->push(new MyMiddlewareFactoryInterfaceImplementation);
-$middleware = $stack->make(static function(ServerRequestInterface $req, RequestHandlerInterface $next): ResponseInterface
+
+$myFactory = new class implements MiddlewareFactoryInterface
 {
-    if()
+    /**
+     * @param mixed $any
+     * @return MiddlewareInterface
+     * @throws MiddlewareFactoryException
+     */
+    public function make($any): MiddlewareInterface
     {
-        return $next->handle($req);
+        if (is_string($any) && $any == 'redirect')
+        {
+            return new MyRedirectMiddleware ;
+        }
+        
+        throw new MiddlewareFactoryException ;
     }
     
-    return new TextResponse('Hello World!');
-});
+    /**
+     * Alias for self::make 
+     */
+    public function __invoke($any) : MiddlewareInterface
+    {
+        return $this->make($any);
+    }
+}
+
+$factory = (new MiddlewareFactoryStack)->push($factory)->push($myFactory);
+
+$middleware = $factory->make('redirect');
+$middleware instanceof MiddlewareInterface // true 
 ```
 
 
