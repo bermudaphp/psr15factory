@@ -73,7 +73,7 @@ $middleware instanceof RedirectMiddleware::class // true
 
 ```php
 
-$middleware = $factory->make(static function(ServerRequestInterface $req)
+$middleware = $factory->make(static function(ServerRequestInterface $req): ResponseInterface
 {
     return new TextResponse('Hello World!');
 });
