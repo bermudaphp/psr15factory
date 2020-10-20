@@ -135,8 +135,13 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     MiddlewareFactoryException::fromPrevios($e, $any)->throw();
                 }
             }
+            
+            if (($count = count($parameters = $method->getParameters())) == 0)
+            {
+                return new Decorator\CallbackDecorator($any);
+            }
 
-            if (($count = count($parameters = $method->getParameters())) == 1)
+            if ($count == 1)
             {
                 if ($this->checkType($parameters[0], ServerRequestInterface::class))
                 {
