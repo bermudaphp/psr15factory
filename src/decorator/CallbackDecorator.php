@@ -30,7 +30,7 @@ class CallbackDecorator implements MiddlewareInterface
     /**
      * @inheritDoc
      */
-    function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         return ($this->callback)($request, $handler);
     }
