@@ -95,6 +95,7 @@ $middleware instanceof MiddlewareInterface::class // true
 ## Availables callback method  signature 
 
 ```php
+function(): ResponseInterface ;
 function(ServerRequestInterface $req): ResponseInterface ;
 function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface ;
 function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface ;
