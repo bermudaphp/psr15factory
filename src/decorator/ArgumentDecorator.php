@@ -53,6 +53,8 @@ final class ArgumentDecorator implements MiddlewareInterface
             
             if (($cls = $param->getClass()) != null)
             {
+                $cls = $cls->getName();
+                
                 foreach ($attributes as $attribute)
                 {
                     if ($attribute instanceof $cls)
