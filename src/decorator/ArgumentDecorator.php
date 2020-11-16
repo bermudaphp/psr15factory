@@ -6,14 +6,14 @@ namespace Bermuda\MiddlewareFactory\Decorator;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Server\MiddlewareInterface;
 
 
 /**
  * Class ArgumentDecorator
  * @package Bermuda\MiddlewareFactory\Decorator
  */
-final class ArgumentDecorator implements RequestHandlerInterface
+final class ArgumentDecorator implements MiddlewareInterface
 {
     /**
      * @var callable
@@ -33,9 +33,11 @@ final class ArgumentDecorator implements RequestHandlerInterface
 
     /**
      * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
      * @return ResponseInterface
+     * @throws \ReflectionException
      */
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $args = [];
 
