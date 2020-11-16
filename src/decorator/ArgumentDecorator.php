@@ -41,16 +41,39 @@ final class ArgumentDecorator implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $args = [];
+        $attributes = $request->getAttributes();
 
         foreach ($this->params as $param)
         {
-            if ($param->isOptional())
+            $args[] = $attributes[$param->getName()];
+
+            if (($cls = $param->getClass()) != null)
             {
-                $args[] = $request->getAttribute($param->getName(), $param->getDefaultValue());
+                foreach ($attributes as $attribute)
+                {
+                    if ($attribute instanceof $cls)
+                    {
+                        $args[] = $attribute;
+                        break;
+                    }
+                }
+                
+                continue;
+            }
+            
+            if ($param->isDefaultValueAvailable())
+            {
+                $args[] = $param->getDefaultValue();
+                continue;
+            }
+            
+            if ($param->allowsNull())
+            {
+                $args[] = null;
                 continue;
             }
 
-            $args[] = $request->getAttribute($param->getName(), null);
+            throw new \RuntimeException('Missing request attribute with name: ' . $param->name);
         }
 
         return call_user_func_array($this->handler, $args);
