@@ -171,7 +171,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 }
             }
             
-            return new Decorator\ArgumentDecorator($parameters);
+            return new Decorator\ArgumentDecorator($any, $parameters);
         }
 
         if (is_iterable($any))
