@@ -45,8 +45,12 @@ final class ArgumentDecorator implements MiddlewareInterface
 
         foreach ($this->params as $param)
         {
-            $args[] = $attributes[$param->getName()];
-
+            if (array_key_exists($param->getName(), $attributes))
+            {
+                $args[] = $attributes[$param->getName()];
+                continue;
+            }
+            
             if (($cls = $param->getClass()) != null)
             {
                 foreach ($attributes as $attribute)
@@ -60,13 +64,13 @@ final class ArgumentDecorator implements MiddlewareInterface
                 
                 continue;
             }
-            
+
             if ($param->isDefaultValueAvailable())
             {
                 $args[] = $param->getDefaultValue();
                 continue;
             }
-            
+
             if ($param->allowsNull())
             {
                 $args[] = null;
