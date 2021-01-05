@@ -117,13 +117,14 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             $returnType = $method->getReturnType();
 
-            if (!$returnType instanceof \ReflectionNamedType || ($returnType->getName() != 'Psr\Http\Message\ResponseInterface' &&
-                    $returnType->getName() != MiddlewareInterface::class))
+            if (!$returnType instanceof \ReflectionNamedType || 
+                (!is_subclass_of($returnType->getName(), ResponseInterface::class) 
+                 && !is_subclass_of($returnType->getName(), MiddlewareInterface::class)))
             {
                 MiddlewareFactoryException::invalidReturnType($any, 'void')->throw();
             }
 
-            if ($returnType->getName() == MiddlewareInterface::class)
+            if (is_subclass_of($returnType->getName(), MiddlewareInterface::class))
             {
                 try
                 {
