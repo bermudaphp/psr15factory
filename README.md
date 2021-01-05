@@ -59,9 +59,9 @@ $middleware instanceof MiddlewareInterface::class // true
 
 ```php
 
-$middleware = $factory->make(static function(ContainerInterface $c) use ($redirectPath, $permanent): MiddlewareInterface
+$middleware = $factory->make(static function(ContainerInterface $c) use ($uri, $permanent): RedirectMiddleware
 {         
-    return new RedirectMiddleware($redirectPath, $c->get(ResponseFactoryInterface::class), $permanent);
+    return new RedirectMiddleware($uri, $c->get(ResponseFactoryInterface::class), $permanent);
 });
 
 $middleware instanceof MiddlewareInterface::class // true
