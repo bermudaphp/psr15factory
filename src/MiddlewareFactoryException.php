@@ -1,10 +1,11 @@
 <?php
 
-
 namespace Bermuda\MiddlewareFactory;
 
 
 use Bermuda\CheckType\Type;
+use Laminas\Stdlib\ResponseInterface;
+use Psr\Http\Server\MiddlewareInterface;
 
 
 /**
@@ -39,8 +40,7 @@ class MiddlewareFactoryException extends \RuntimeException
      */
     public function getMiddleware()
     {
-        $this->middleware = $middleware;
-        return $this;
+        return $middleware;
     }
     
     /**
@@ -80,7 +80,8 @@ class MiddlewareFactoryException extends \RuntimeException
      */
     public static function invalidReturnType(callable $any, string $returnType): self
     {
-        return( new static('Callable: ' . $type . 'should return an Psr\Http\Message\ResponseInterface. Returned '. $returnType))->setMiddleware($any);
+        return (new static(sprintf('Callable middleware should return an %s or %s. Returned: %s', ResponseInterface::class, MiddlewareInterface::class, $returnType)))
+            ->setMiddleware($any);
     }
     
     private static function getTypeForCallable(callable $type) : string
