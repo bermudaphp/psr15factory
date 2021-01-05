@@ -102,7 +102,7 @@ function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): 
 function(ServerRequestInterface $req, callable $next): ResponseInterface ;
 ```
 
-## MiddlewareFactoryStack 
+## Aggrigation MiddlewareFactory
 
 ```php
 
@@ -132,7 +132,8 @@ $myFactory = new class implements MiddlewareFactoryInterface
     }
 }
 
-$factory = (new MiddlewareFactoryStack)->push($factory)->push($myFactory);
+$factory = (new AggregateMiddlewareFactory)->addFactory($factory)
+                ->addFactory($myFactory);
 
 $middleware = $factory->make('redirect');
 $middleware instanceof MiddlewareInterface // true 
