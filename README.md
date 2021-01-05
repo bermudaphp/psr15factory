@@ -103,7 +103,7 @@ function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): 
 function(ServerRequestInterface $req, callable $next): ResponseInterface ;
 ```
 
-## Aggrigation MiddlewareFactory
+## Aggregation MiddlewareFactory
 
 ```php
 
