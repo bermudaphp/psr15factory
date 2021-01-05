@@ -1,5 +1,6 @@
 <?php
 
+
 namespace Bermuda\MiddlewareFactory;
 
 
@@ -139,7 +140,12 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             if (($count = count($parameters = $method->getParameters())) == 0)
             {
-                return new Decorator\CallbackDecorator($any);
+                return Decorator\CallbackDecorator::decorateEmptyArgsCallable($any);
+            }
+            
+            if ($count == 1 && $this->checkType($parameters[0], ContainerInterface::class))
+            {
+                return Decorator\CallbackDecorator::decorateContainerArgCallable($any, $this->container);
             }
             
             if ($this->checkType($parameters[0], ServerRequestInterface::class))
