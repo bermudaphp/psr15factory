@@ -8,15 +8,14 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 
 
-final class ConfigProvider
+/**
+ * Class ConfigProvider
+ * @package Bermuda\Cycle
+ */
+class ConfigProvider extends \Bermuda\Config\ConfigProvider
 {
-    public function __invoke(): array
+    protected function getFactories(): array
     {
-        return ['dependencies' => 
-            ['factories' => [MiddlewareFactoryInterface::class => static function(ContainerInterface $container)
-            {
-                return new MiddlewareFactory($container, $container->get(ResponseFactoryInterface::class), $container->get(PipelineFactoryInterface::class));
-            }]
-        ]];
+        return [MiddlewareFactoryInterface::class => MiddlewareFactoryFactory::class];
     }
 }
