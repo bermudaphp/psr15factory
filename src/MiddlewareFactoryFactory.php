@@ -5,6 +5,7 @@ namespace Bermuda\MiddlewareFactory;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Bermuda\MiddlewareFactory\PipelineFactoryInterface;
 
 
 final class MiddlewareFactoryFactory
