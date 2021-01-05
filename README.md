@@ -96,6 +96,7 @@ $middleware instanceof MiddlewareInterface::class // true
 
 ```php
 function(): ResponseInterface ;
+function(ContainerInterface $container): ResponseInterface ;
 function(ServerRequestInterface $req): ResponseInterface ;
 function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface ;
 function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface ;
