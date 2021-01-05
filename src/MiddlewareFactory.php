@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Bermuda\MiddlewareFactory;
 
 
@@ -117,14 +116,15 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             $returnType = $method->getReturnType();
 
-            if (!$returnType instanceof \ReflectionNamedType || 
-                (!is_subclass_of($returnType->getName(), ResponseInterface::class) 
-                 && !is_subclass_of($returnType->getName(), MiddlewareInterface::class)))
+            if (!$returnType instanceof \ReflectionNamedType || !$this->checkReturnType($returnType->getName()))
             {
-                MiddlewareFactoryException::invalidReturnType($any, 'void')->throw();
+                MiddlewareFactoryException::invalidReturnType($any,
+                    $returnType != null ? $returnType->getName() : 'void')
+                    ->throw();
             }
 
-            if (is_subclass_of($returnType->getName(), MiddlewareInterface::class))
+            if ($returnType->getName() == MiddlewareInterface::class ||
+                is_subclass_of($returnType->getName(), MiddlewareInterface::class))
             {
                 try
                 {
@@ -217,18 +217,26 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
     }
 
+    private function checkReturnType(string $type): bool
+    {
+        return $type == MiddlewareInterface::class || $type == ResponseInterface::class
+            || is_subclass_of($type, MiddlewareInterface::class)
+            || is_subclass_of($type, ResponseInterface::class);
+    }
+
     /**
      * @param \ReflectionParameter $parameter
      * @param string $type
      * @return bool
      */
-    private function checkType(\ReflectionParameter $parameter, string $type) : bool
+    private function checkType(\ReflectionParameter $parameter, string $type): bool
     {
         if (!($refType = $parameter->getType()) instanceof \ReflectionNamedType)
         {
             return false;
         }
 
-        return Type::isInterface($refType->getName(), $type);
+        return Type::isInterface($refType->getName(), $type) 
+            || is_subclass_of($refType->getName(), $type);
     }
 }
