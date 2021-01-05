@@ -3,14 +3,9 @@
 namespace Bermuda\MiddlewareFactory;
 
 
-use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Bermuda\Pipeline\PipelineFactoryInterface;
-
-
 /**
  * Class ConfigProvider
- * @package Bermuda\Cycle
+ * @package Bermuda\MiddlewareFactory
  */
 class ConfigProvider extends \Bermuda\Config\ConfigProvider
 {
