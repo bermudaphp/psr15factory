@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Bermuda\MiddlewareFactory;
 
 
@@ -14,9 +13,9 @@ final class ConfigProvider
     public function __invoke(): array
     {
         return ['dependencies' => 
-            ['factories' => [MiddlewareFactoryInterface::class => function(ContainerInterface $c)
+            ['factories' => [MiddlewareFactoryInterface::class => static function(ContainerInterface $container)
             {
-                return new MiddlewareFactory($c, $c->get(ResponseFactoryInterface::class), $c->get(PipelineFactoryInterface::class));
+                return new MiddlewareFactory($container, $container->get(ResponseFactoryInterface::class), $container->get(PipelineFactoryInterface::class));
             }]
         ]];
     }
