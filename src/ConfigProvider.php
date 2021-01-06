@@ -17,9 +17,4 @@ class ConfigProvider extends \Bermuda\Config\ConfigProvider
     {
         return [MiddlewareFactoryInterface::class => MiddlewareFactoryFactory::class];
     }
-
-    protected function getInvokables(): array
-    {
-        return [PipelineFactoryInterface::class => PipelineFactory::class];
-    }
 }
