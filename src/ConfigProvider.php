@@ -2,10 +2,8 @@
 
 namespace Bermuda\MiddlewareFactory;
 
-
 use Bermuda\Pipeline\PipelineFactory;
 use Bermuda\Pipeline\PipelineFactoryInterface;
-
 
 /**
  * Class ConfigProvider
