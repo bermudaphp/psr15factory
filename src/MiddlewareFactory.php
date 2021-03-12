@@ -2,7 +2,6 @@
 
 namespace Bermuda\MiddlewareFactory;
 
-
 use Bermuda\CheckType\Type;
 use Bermuda\Pipeline\PipelineFactory;
 use Psr\Container\ContainerInterface;
@@ -13,9 +12,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 
-
 use function Bermuda\str_contains;
-
 
 /**
  * Class MiddlewareFactory
