@@ -2,11 +2,9 @@
 
 namespace Bermuda\MiddlewareFactory;
 
-
 use Bermuda\CheckType\Type;
-use Laminas\Stdlib\ResponseInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
-
 
 /**
  * Class MiddlewareFactoryException
@@ -86,17 +84,17 @@ class MiddlewareFactoryException extends \RuntimeException
     
     private static function getTypeForCallable(callable $type) : string
     {
-        if(is_object($any))
+        if (is_object($any))
         {
             return get_class($any);
         }
             
-        if(is_array($any))
+        if (is_array($any))
         {
             return (new \ReflectionMethod($any[0], $any[1]))->getName();
         }
         
-        if(str_pos($any, '::') !== false)
+        if (str_pos($any, '::') !== false)
         {
             return (new \ReflectionMethod($any))->getName();
         }
