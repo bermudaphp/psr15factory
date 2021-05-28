@@ -2,10 +2,8 @@
 
 namespace Bermuda\MiddlewareFactory;
 
-
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
-
 
 /**
  * Class AggregateMiddlewareFactory
@@ -41,19 +39,19 @@ final class AggregateMiddlewareFactory implements MiddlewareFactoryInterface
                 return $factory->make($any);
             }
             
-            catch(MiddlewareFactoryException $e)
+            catch(UnresolvableFactoryException $e)
             {
                 continue;
             }    
         }
         
-        MiddlewareFactoryException::notCreatable($any)->throw();
+        throw UnresolvableMiddlewareException::notCreatable($any);
     }
     
     /**
      * @inheritDoc
      */
-    public function __invoke($any) : MiddlewareInterface 
+    public function __invoke($any): MiddlewareInterface 
     {
         return $this->make($any);
     }
