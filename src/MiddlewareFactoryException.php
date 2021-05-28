@@ -9,6 +9,7 @@ use Psr\Http\Server\MiddlewareInterface;
 /**
  * Class MiddlewareFactoryException
  * @package Bermuda\MiddlewareFactory
+ * @deprecated
  */
 class MiddlewareFactoryException extends \RuntimeException 
 {
