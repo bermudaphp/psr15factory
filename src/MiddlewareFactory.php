@@ -115,9 +115,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             if (!$returnType instanceof \ReflectionNamedType || !$this->checkReturnType($returnType->getName()))
             {
-                MiddlewareFactoryException::invalidReturnType($any,
-                    $returnType != null ? $returnType->getName() : 'void')
-                    ->throw();
+                throw UnresolvableMiddlewareException::invalidReturnType($any, $returnType != null ? $returnType->getName() : 'void');
             }
 
             if ($returnType->getName() == MiddlewareInterface::class ||
@@ -130,7 +128,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
                 catch (\Throwable $e)
                 {
-                    MiddlewareFactoryException::fromPrevios($e, $any)->throw();
+                    throw UnresolvableMiddlewareException::fromPrevios($e, $any);
                 }
             }
 
@@ -190,7 +188,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
 
         end:
-        MiddlewareFactoryException::notCreatable($any)->throw();
+        throw UnresolvableMiddlewareException::notCreatable($any);
     }
 
     /**
@@ -204,7 +202,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     /**
      * @param string $service
      * @return object
-     * @throws MiddlewareFactoryException
+     * @throws UnresolvableMiddlewareException
      */
     private function service(string $service): object
     {
@@ -215,7 +213,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
         catch (\Throwable $e)
         {
-            MiddlewareFactoryException::fromPrevios($e, $service)->throw();
+            throw UnresolvableMiddlewareException::fromPrevios($e, $service);
         }
     }
 
