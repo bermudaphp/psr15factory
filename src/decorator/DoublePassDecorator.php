@@ -1,15 +1,12 @@
 <?php
 
-
 namespace Bermuda\MiddlewareFactory\Decorator;
-
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
-
 
 /**
  * Class DoublePassDecorator
@@ -30,9 +27,6 @@ final class DoublePassDecorator extends CallbackDecorator
    */
   public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
   {
-      return ($this->middleware)($request, $this->factory->createResponse(), static function (ServerRequestInterface $request) use ($handler): ResponseInterface
-      {
-          return $handler->handle($request);
-      });
+      return ($this->middleware)($request, $this->factory->createResponse(), static fn(ServerRequestInterface $request): ResponseInterface => $handler->handle($request);
   }
 }
