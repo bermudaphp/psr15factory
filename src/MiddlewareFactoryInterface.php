@@ -1,11 +1,8 @@
 <?php
 
-
 namespace Bermuda\MiddlewareFactory;
 
-
 use Psr\Http\Server\MiddlewareInterface;
-
 
 /**
  * Interface MiddlewareFactoryInterface
@@ -16,7 +13,7 @@ interface MiddlewareFactoryInterface
     /**
      * @param mixed $any
      * @return MiddlewareInterface
-     * @throws MiddlewareFactoryException
+     * @throws UnresolvableMiddlewareException
      */
     public function make($any): MiddlewareInterface ;
     
