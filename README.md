@@ -112,7 +112,7 @@ $myFactory = new class implements MiddlewareFactoryInterface
     /**
      * @param mixed $any
      * @return MiddlewareInterface
-     * @throws MiddlewareFactoryException
+     * @throws UnresolvableMiddlewareException
      */
     public function make($any): MiddlewareInterface
     {
