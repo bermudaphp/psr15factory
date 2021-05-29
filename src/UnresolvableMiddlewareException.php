@@ -12,7 +12,7 @@ final class UnresolvableMiddlewareException extends \RuntimeException
 {
     private $middleware;
     
-    public function __construct(?$message = null, $middleware = null)
+    public function __construct(?string $message = null, $middleware = null)
     {
         $this->middleware = $middleware;
         
