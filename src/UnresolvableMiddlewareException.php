@@ -2,6 +2,7 @@
 
 namespace Bermuda\MiddlewareFactory;
 
+use Bermuda\CheckType\Type;
 use Throwable;
 
 /**
@@ -31,7 +32,7 @@ final class UnresolvableMiddlewareException extends \RuntimeException
     
     public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
     {
-        $self = new self($e->getMessage(), $e->getCommand());
+        $self = new self($e->getMessage(), $e->getMiddleware());
         
         $self->file = $backtrace['file'];
         $self->line = $backtrace['line'];
@@ -45,12 +46,13 @@ final class UnresolvableMiddlewareException extends \RuntimeException
      */
     public static function fromPrevios(\Throwable $e, $middleware): self
     {
-        $self = new static($e->getMessage(), $e->getCode(), $e);
+        $self = new static($e->getMessage(), $e);
         
         $self->file = $e->getFile();
         $self->line = $e->getLine();
+        $self->code = $e->getCode();
         
-        return $self->setMiddleware($middleware);
+        return $self;
     }
     
     /**
@@ -66,7 +68,7 @@ final class UnresolvableMiddlewareException extends \RuntimeException
             $type = static::getTypeForCallable($any);
         }
         
-        return (new static('Cannot create middleware for this type: ' . $type))->setMiddleware($any);
+        return new static('Cannot create middleware for this type: ' . $type, $any);
     }
     
     /**
@@ -76,8 +78,11 @@ final class UnresolvableMiddlewareException extends \RuntimeException
      */
     public static function invalidReturnType(callable $any, string $returnType): self
     {
-        return (new static(sprintf('Callable middleware should return an %s or %s. Returned: %s', ResponseInterface::class, MiddlewareInterface::class, $returnType)))
-            ->setMiddleware($any);
+        return new static(
+            sprintf('Callable middleware should return an %s or %s. Returned: %s', 
+                ResponseInterface::class, MiddlewareInterface::class, $returnType), 
+            $any
+        );
     }
     
     private static function getTypeForCallable(callable $type): string
