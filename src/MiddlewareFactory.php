@@ -121,13 +121,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             if ($returnType->getName() == MiddlewareInterface::class ||
                 is_subclass_of($returnType->getName(), MiddlewareInterface::class))
             {
-                try
-                {
+                try {
                     return $any($this->container);
-                }
-
-                catch (\Throwable $e)
-                {
+                } catch (\ParseError $e){
+                    throw $e;
+                } catch (\Throwable $e) {
                     throw UnresolvableMiddlewareException::fromPrevios($e, $any);
                 }
             }
@@ -206,13 +204,12 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
      */
     private function service(string $service): object
     {
-        try
-        {
+        try {
             return $this->container->get($service);
+        } catch (\ParseError $e){
+            throw $e;
         }
-
-        catch (\Throwable $e)
-        {
+        catch (\Throwable $e) {
             throw UnresolvableMiddlewareException::fromPrevios($e, $service);
         }
     }
