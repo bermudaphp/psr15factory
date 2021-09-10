@@ -3,105 +3,102 @@
 namespace Bermuda\MiddlewareFactory;
 
 use Bermuda\CheckType\Type;
+use Laminas\Stdlib\ResponseInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
+use RuntimeException;
 use Throwable;
 
-/**
- * Class UnresolvableMiddlewareException
- * @package Bermuda\MiddlewareFactory
- */
-final class UnresolvableMiddlewareException extends \RuntimeException
+final class UnresolvableMiddlewareException extends RuntimeException
 {
     private $middleware;
-    
+
     public function __construct(?string $message = null, $middleware = null)
     {
         $this->middleware = $middleware;
-        
-        if (!$message && is_string($middleware))
-        {
+
+        if (!$message && is_string($middleware)) {
             $message = 'Unresolvable middleware: ' . $middleware;
         }
 
         parent::__construct($message ?? 'Unresolvable middleware');
     }
-    
+
+    public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
+    {
+        $self = new self($e->getMessage(), $e->getMiddleware());
+
+        $self->file = $backtrace['file'];
+        $self->line = $backtrace['line'];
+
+        throw $self;
+    }
+
     public function getMiddleware()
     {
         return $this->middleware;
     }
-    
-    public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
+
+    public static function fromPrevious(Throwable $e, $middleware): self
     {
-        $self = new self($e->getMessage(), $e->getMiddleware());
-        
-        $self->file = $backtrace['file'];
-        $self->line = $backtrace['line'];
-        
-        throw $self;
-    }
-    
-    /**
-     * @param \Throwable $e
-     * @return static
-     */
-    public static function fromPrevios(\Throwable $e, $middleware): self
-    {
-        $self = new static($e->getMessage(), $middleware);
-        
+        $self = new self($e->getMessage(), $middleware);
+
         $self->file = $e->getFile();
         $self->line = $e->getLine();
         $self->code = $e->getCode();
-        
+
         return $self;
     }
-    
+
     /**
      * @param $any
-     * @return static
+     * @return self
+     * @throws ReflectionException
      */
     public static function notCreatable($any): self
     {
         $type = Type::gettype($any, Type::objectAsClass);
 
-        if ($type == Type::callable)
-        {
-            $type = static::getTypeForCallable($any);
+        if ($type == Type::callable) {
+            $type = self::getTypeForCallable($any);
         }
-        
-        return new static('Cannot create middleware for this type: ' . $type, $any);
+
+        return new self('Cannot create middleware for this type: ' . $type, $any);
     }
-    
+
+    /**
+     * @throws ReflectionException
+     */
+    private static function getTypeForCallable(callable $any): string
+    {
+        if (is_object($any)) {
+            return get_class($any);
+        }
+
+        if (is_array($any)) {
+            return (new ReflectionMethod($any[0], $any[1]))->getName();
+        }
+
+        if (strpos($any, '::') !== false) {
+            return (new ReflectionMethod($any))->getName();
+        }
+
+        return (new ReflectionFunction($any))->getName();
+    }
+
     /**
      * @param callable $any
      * @param string $returnType
-     * @return static
+     * @return self
      */
     public static function invalidReturnType(callable $any, string $returnType): self
     {
-        return new static(
-            sprintf('Callable middleware should return an %s or %s. Returned: %s', 
-                ResponseInterface::class, MiddlewareInterface::class, $returnType), 
+        return new self(
+            sprintf('Callable middleware should return an %s or %s. Returned: %s',
+                ResponseInterface::class, MiddlewareInterface::class, $returnType),
             $any
         );
-    }
-    
-    private static function getTypeForCallable(callable $type): string
-    {
-        if (is_object($any))
-        {
-            return get_class($any);
-        }
-            
-        if (is_array($any))
-        {
-            return (new \ReflectionMethod($any[0], $any[1]))->getName();
-        }
-        
-        if (str_pos($any, '::') !== false)
-        {
-            return (new \ReflectionMethod($any))->getName();
-        }
-        
-        return (new \ReflectionFunction($any))->getName();
     }
 }
