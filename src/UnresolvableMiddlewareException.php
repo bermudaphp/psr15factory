@@ -3,7 +3,7 @@
 namespace Bermuda\MiddlewareFactory;
 
 use Bermuda\CheckType\Type;
-use Laminas\Stdlib\ResponseInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use ReflectionException;
 use ReflectionFunction;
