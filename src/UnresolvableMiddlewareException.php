@@ -46,7 +46,7 @@ final class UnresolvableMiddlewareException extends \RuntimeException
      */
     public static function fromPrevios(\Throwable $e, $middleware): self
     {
-        $self = new static($e->getMessage(), $e);
+        $self = new static($e->getMessage(), $middleware);
         
         $self->file = $e->getFile();
         $self->line = $e->getLine();
