@@ -126,7 +126,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 } catch (\ParseError $e){
                     throw $e;
                 } catch (\Throwable $e) {
-                    throw UnresolvableMiddlewareException::fromPrevios($e, $any);
+                    throw UnresolvableMiddlewareException::fromPrevious($e, $any);
                 }
             }
 
@@ -210,7 +210,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             throw $e;
         }
         catch (\Throwable $e) {
-            throw UnresolvableMiddlewareException::fromPrevios($e, $service);
+            throw UnresolvableMiddlewareException::fromPrevious($e, $service);
         }
     }
 
