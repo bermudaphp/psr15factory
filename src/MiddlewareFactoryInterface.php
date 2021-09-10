@@ -4,10 +4,6 @@ namespace Bermuda\MiddlewareFactory;
 
 use Psr\Http\Server\MiddlewareInterface;
 
-/**
- * Interface MiddlewareFactoryInterface
- * @package Bermuda\MiddlewareFactory
- */
 interface MiddlewareFactoryInterface
 {
     /**
