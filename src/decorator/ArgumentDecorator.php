@@ -6,11 +6,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use ReflectionParameter;
+use RuntimeException;
 
-/**
- * Class ArgumentDecorator
- * @package Bermuda\MiddlewareFactory\Decorator
- */
 final class ArgumentDecorator implements MiddlewareInterface
 {
     /**
@@ -19,7 +17,7 @@ final class ArgumentDecorator implements MiddlewareInterface
     private $handler;
 
     /**
-     * @var \ReflectionParameter[]
+     * @var ReflectionParameter[]
      */
     private array $params;
 
@@ -30,51 +28,46 @@ final class ArgumentDecorator implements MiddlewareInterface
     }
 
     /**
-     * @inheritDoc
-     * @throws \ReflectionException
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws RuntimeException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $args = [];
         $attributes = $request->getAttributes();
 
-        foreach ($this->params as $param)
-        {
-            if (array_key_exists($param->getName(), $attributes))
-            {
+        foreach ($this->params as $param) {
+            if (array_key_exists($param->getName(), $attributes)) {
                 $args[] = $attributes[$param->getName()];
                 continue;
             }
-            
-            if (($cls = $param->getClass()) != null)
-            {
+
+            if (($cls = $param->getClass()) != null) {
                 $cls = $cls->getName();
-                
-                foreach ($attributes as $attribute)
-                {
-                    if ($attribute instanceof $cls)
-                    {
+
+                foreach ($attributes as $attribute) {
+                    if ($attribute instanceof $cls) {
                         $args[] = $attribute;
                         break;
                     }
                 }
-                
+
                 continue;
             }
 
-            if ($param->isDefaultValueAvailable())
-            {
+            if ($param->isDefaultValueAvailable()) {
                 $args[] = $param->getDefaultValue();
                 continue;
             }
 
-            if ($param->allowsNull())
-            {
+            if ($param->allowsNull()) {
                 $args[] = null;
                 continue;
             }
 
-            throw new \RuntimeException('Missing request attribute with name: ' . $param->name);
+            throw new RuntimeException('Missing request attribute with name: ' . $param->name);
         }
 
         return call_user_func_array($this->handler, $args);
