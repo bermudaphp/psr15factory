@@ -3,102 +3,220 @@
 namespace Bermuda\MiddlewareFactory;
 
 use Bermuda\CheckType\Type;
+use Bermuda\Pipeline\PipelineFactory;
+use Bermuda\Pipeline\PipelineFactoryInterface;
+use ParseError;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
-use ReflectionException;
+use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionFunction;
 use ReflectionMethod;
-use RuntimeException;
+use ReflectionNamedType;
+use ReflectionObject;
+use ReflectionParameter;
 use Throwable;
+use function Bermuda\str_contains;
 
-final class UnresolvableMiddlewareException extends RuntimeException
+final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
-    private $middleware;
+    public const separator = '@';
+    private ContainerInterface $container;
+    private ResponseFactoryInterface $responseFactory;
+    private PipelineFactoryInterface $pipelineFactory;
 
-    public function __construct(?string $message = null, $middleware = null)
+    public function __construct(
+        ContainerInterface       $container,
+        ResponseFactoryInterface $responseFactory,
+        PipelineFactoryInterface $pipelineFactory = null
+    )
     {
-        $this->middleware = $middleware;
-
-        if (!$message && is_string($middleware)) {
-            $message = 'Unresolvable middleware: ' . $middleware;
-        }
-
-        parent::__construct($message ?? 'Unresolvable middleware');
-    }
-
-    public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
-    {
-        $self = new self($e->getMessage(), $e->getMiddleware());
-
-        $self->file = $backtrace['file'];
-        $self->line = $backtrace['line'];
-
-        throw $self;
-    }
-
-    public function getMiddleware()
-    {
-        return $this->middleware;
-    }
-
-    public static function fromPrevious(Throwable $e, $middleware): self
-    {
-        $self = new self($e->getMessage(), $middleware);
-
-        $self->file = $e->getFile();
-        $self->line = $e->getLine();
-        $self->code = $e->getCode();
-
-        return $self;
+        $this->container = $container;
+        $this->responseFactory = $responseFactory;
+        $this->pipelineFactory = $pipelineFactory ?? new PipelineFactory();
     }
 
     /**
-     * @param $any
-     * @return self
-     * @throws ReflectionException
+     * @inheritDoc
      */
-    public static function notCreatable($any): self
+    public function __invoke($any): MiddlewareInterface
     {
-        $type = Type::gettype($any, Type::objectAsClass);
-
-        if ($type == Type::callable) {
-            $type = self::getTypeForCallable($any);
-        }
-
-        return new self('Cannot create middleware for this type: ' . $type, $any);
+        return $this->make($any);
     }
 
     /**
-     * @throws ReflectionException
+     * @inheritDoc
      */
-    private static function getTypeForCallable(callable $any): string
+    public function make($any): MiddlewareInterface
     {
-        if (is_object($any)) {
-            return get_class($any);
+        if (is_string($any)) {
+            if ($this->container->has($any) && is_subclass_of($any, MiddlewareInterface::class)) {
+                return $this->service($any);
+            }
+
+            if ($this->container->has($any) && is_subclass_of($any, RequestHandlerInterface::class)) {
+                return new Decorator\RequestHandlerDecorator($this->container->get($any));
+            }
+
+            if (str_contains($any, self::separator) !== false) {
+                list($service, $method) = explode(self::separator, $any, 2);
+
+                if ($this->container->has($service) && method_exists($service, $method)) {
+                    $any = [$this->service($service), $method];
+                    goto callback;
+                }
+            }
+
+            if (is_callable($any)) {
+                goto str_callback;
+            }
+
+            goto end;
         }
 
-        if (is_array($any)) {
-            return (new ReflectionMethod($any[0], $any[1]))->getName();
+        if ($any instanceof MiddlewareInterface) {
+            return $any;
         }
 
-        if (strpos($any, '::') !== false) {
-            return (new ReflectionMethod($any))->getName();
+        if ($any instanceof RequestHandlerInterface) {
+            return new Decorator\RequestHandlerDecorator($any);
         }
 
-        return (new ReflectionFunction($any))->getName();
+        if (is_callable($any)) {
+            if (is_object($any)) {
+                $method = (new ReflectionObject($any))
+                    ->getMethod('__invoke');
+            } elseif (is_array($any)) {
+                callback:
+                $method = new ReflectionMethod($any[0], $any[1]);
+            } else {
+                if (str_contains($any, '::') !== false) {
+                    $method = new ReflectionMethod($any);
+                } else {
+                    str_callback:
+                    $method = new ReflectionFunction($any);
+                }
+            }
+
+            $returnType = $method->getReturnType();
+
+            if (!$returnType instanceof ReflectionNamedType || !$this->checkReturnType($returnType->getName())) {
+                throw UnresolvableMiddlewareException::invalidReturnType($any, $returnType != null ? $returnType->getName() : 'void');
+            }
+
+            if ($returnType->getName() == MiddlewareInterface::class ||
+                is_subclass_of($returnType->getName(), MiddlewareInterface::class)) {
+                try {
+                    return $any($this->container);
+                } catch (ParseError $e) {
+                    throw $e;
+                } catch (Throwable $e) {
+                    throw UnresolvableMiddlewareException::fromPrevious($e, $any);
+                }
+            }
+
+            if (($count = count($parameters = $method->getParameters())) == 0) {
+                return Decorator\CallbackDecorator::decorateEmptyArgsCallable($any);
+            }
+
+            if ($count == 1 && $this->checkType($parameters[0], ContainerInterface::class)) {
+                return Decorator\CallbackDecorator::decorateContainerArgCallable($any, $this->container);
+            }
+
+            if ($this->checkType($parameters[0], ServerRequestInterface::class)) {
+                if ($count == 1) {
+                    return new Decorator\CallbackDecorator($any);
+                }
+
+                if ($count == 2) {
+                    if ($this->checkType($parameters[1], RequestHandlerInterface::class)) {
+                        return new Decorator\CallbackDecorator($any);
+                    }
+
+                    if ($this->declaresCallable($parameters[1])) {
+                        return new Decorator\SinglePassDecorator($any);
+                    }
+                }
+
+                if ($count === 3) {
+                    if ($this->checkType($parameters[1], ResponseInterface::class)
+                        && $this->declaresCallable($parameters[2])) {
+                        return new Decorator\DoublePassDecorator($any, $this->responseFactory);
+                    }
+                }
+            }
+
+            return new Decorator\ArgumentDecorator($any, $parameters);
+        }
+
+        if (is_iterable($any)) {
+            $pipeline = $this->pipelineFactory->make();
+
+            foreach ($any as $item) {
+                $pipeline->pipe($this->make($item));
+            }
+
+            return $pipeline;
+        }
+
+        end:
+        throw UnresolvableMiddlewareException::notCreatable($any);
     }
 
     /**
-     * @param callable $any
-     * @param string $returnType
-     * @return self
+     * @param string $service
+     * @return object
+     * @throws UnresolvableMiddlewareException
      */
-    public static function invalidReturnType(callable $any, string $returnType): self
+    private function service(string $service): object
     {
-        return new self(
-            sprintf('Callable middleware should return an %s or %s. Returned: %s',
-                ResponseInterface::class, MiddlewareInterface::class, $returnType),
-            $any
-        );
+        try {
+            return $this->container->get($service);
+        } catch (ParseError $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            throw UnresolvableMiddlewareException::fromPrevious($e, $service);
+        }
+    }
+
+    private function checkReturnType(string $type): bool
+    {
+        return $type == MiddlewareInterface::class || $type == ResponseInterface::class
+            || is_subclass_of($type, MiddlewareInterface::class)
+            || is_subclass_of($type, ResponseInterface::class);
+    }
+
+    /**
+     * @param ReflectionParameter $parameter
+     * @param string $type
+     * @return bool
+     */
+    private function checkType(ReflectionParameter $parameter, string $type): bool
+    {
+        if (!($refType = $parameter->getType()) instanceof ReflectionNamedType) {
+            return false;
+        }
+
+        return Type::isInterface($refType->getName(), $type)
+            || is_subclass_of($refType->getName(), $type);
+    }
+
+    private function declaresCallable(ReflectionParameter $reflectionParameter): bool
+    {
+        if (version_compare(PHP_VERSION, '8.0.0') >= 0) {
+            $reflectionType = $reflectionParameter->getType();
+
+            if (!$reflectionType) return false;
+
+            $types = $reflectionType instanceof \ReflectionUnionType
+                ? $reflectionType->getTypes()
+                : [$reflectionType];
+
+            return in_array('callable', array_map(fn(ReflectionNamedType $t) => $t->getName(), $types));
+        }
+
+        return $reflectionParameter->isCallable();
     }
 }
