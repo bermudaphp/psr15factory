@@ -92,6 +92,19 @@ $middleware = $factory->make('MyCallback@methoodName');
 $middleware instanceof MiddlewareInterface::class // true
 ```
 
+## Request Args Middleware
+
+```php
+
+$middleware = $factory->make(static function(string $name): ResponseInterface
+{
+    return new TextResponse(sprintf('Hello, %s!', $name));
+});
+
+$response = $middleware->process((new ServerRequest())->withAttribute('name', 'John'), $requestHandler);
+$response instanceof TextResponse // true
+```
+
 ## Availables callback method  signature 
 
 ```php
@@ -121,7 +134,7 @@ $myFactory = new class implements MiddlewareFactoryInterface
             return new MyRedirectMiddleware ;
         }
         
-        throw new MiddlewareFactoryException ;
+        throw new UnresolvableMiddlewareException;
     }
     
     /**
