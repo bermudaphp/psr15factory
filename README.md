@@ -110,7 +110,7 @@ $response instanceof TextResponse // true
 ```php
 function(): ResponseInterface ;
 function(ContainerInterface $container): ResponseInterface ;
-function(string|float|int $requestAttributeName1, string|float|int $requestAttributeName2 ... other attributes): ResponseInterface ;
+function(mixed ... $requestAttributeName): ResponseInterface ;
 function(ServerRequestInterface $req): ResponseInterface ;
 function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface ;
 function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface ;
