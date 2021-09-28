@@ -52,11 +52,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     public function make($any): MiddlewareInterface
     {
         if (is_string($any)) {
-            if ($this->container->has($any) && is_subclass_of($any, MiddlewareInterface::class)) {
+            if (($has = $this->container->has($any)) && is_subclass_of($any, MiddlewareInterface::class)) {
                 return $this->service($any);
             }
 
-            if ($this->container->has($any) && is_subclass_of($any, RequestHandlerInterface::class)) {
+            if ($has && is_subclass_of($any, RequestHandlerInterface::class)) {
                 return new Decorator\RequestHandlerDecorator($this->container->get($any));
             }
 
@@ -67,6 +67,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                     $any = [$this->service($service), $method];
                     goto callback;
                 }
+            }
+
+            if ($has && method_exists($any, '__invoke')){
+                $any = $this->service($any);
+                goto invokable;
             }
 
             if (is_callable($any)) {
@@ -86,6 +91,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
         if (is_callable($any)) {
             if (is_object($any)) {
+                invokable:
                 $method = (new ReflectionObject($any))
                     ->getMethod('__invoke');
             } elseif (is_array($any)) {
