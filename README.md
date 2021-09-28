@@ -92,6 +92,21 @@ $middleware = $factory->make('MyCallback@methoodName');
 $middleware instanceof MiddlewareInterface::class // true
 ```
 
+## Invokable Middleware
+
+```php
+
+class Invokable
+{
+    public function __invoke(string $name) : ResponseInterface
+    {
+        return new TextResponse('Hello, '. $name);
+    }
+}
+
+$factory->make('Invokable::class') instanceof MiddlewareInterface::class ; // true
+```
+
 ## Request Args Middleware
 
 ```php
