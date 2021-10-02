@@ -11,7 +11,7 @@
     "bermudaphp/config": "^1.0",
     "bermudaphp/pipeline": "^1.0",
     "bermudaphp/checktype": "^1.0",
-    "bermudaphp/stringy": "^1.2",
+    "bermudaphp/stringy": "^1.2 || ^2.0",
     "psr/container": "^1.0"
   }
 }
