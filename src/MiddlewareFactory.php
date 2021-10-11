@@ -18,7 +18,7 @@ use ReflectionNamedType;
 use ReflectionObject;
 use ReflectionParameter;
 use Throwable;
-use function Bermuda\str_contains;
+use function Bermuda\String\str_contains;
 
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
