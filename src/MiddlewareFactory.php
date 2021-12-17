@@ -107,13 +107,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             } elseif (is_array($any)) {
                 callback:
                 $method = new ReflectionMethod($any[0], $any[1]);
+            } elseif (str_contains($any, '::') !== false) {
+                $method = new ReflectionMethod($any);
             } else {
-                if (str_contains($any, '::') !== false) {
-                    $method = new ReflectionMethod($any);
-                } else {
-                    str_callback:
-                    $method = new ReflectionFunction($any);
-                }
+                str_callback:
+                $method = new ReflectionFunction($any);
             }
 
             $returnType = $method->getReturnType();
@@ -168,13 +166,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
 
         if (is_iterable($any)) {
-            $pipeline = $this->pipelineFactory->make();
-
-            foreach ($any as $item) {
-                $pipeline->pipe($this->make($item));
-            }
-
-            return $pipeline;
+            return $this->pipelineFactory->make(is_array($any) ? $any : iterator_to_array($any));
         }
 
         end:
