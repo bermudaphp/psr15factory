@@ -45,6 +45,16 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         return $this->make($any);
     }
+    
+    public static function fromContainer(ContainerInterface $container): self
+    {
+        return new self(
+            $contaner, $container->get(ResponseFactoryInterface::class), 
+            $container->has(PipelineFactoryInterface::class) ? 
+            $container->get(PipelineFactoryInterface::class) 
+            : new PipelineFactory()
+       );
+    }
 
     /**
      * @inheritDoc
