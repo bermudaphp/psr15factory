@@ -10,17 +10,11 @@ final class MiddlewareFactoryFactory
 {
     public static function makeOf(iterable $factories = []): AggregateMiddlewareFactory
     {
-        $aggregate = new AggregateMiddlewareFactory();
-
-        foreach ($factories as $factory) {
-            $aggregate->addFactory($factory);
-        }
-
-        return $aggregate;
+        return AggregateMiddlewareFactory::fromFactories($factories);
     }
 
     public function __invoke(ContainerInterface $container): MiddlewareFactory
     {
-        return new MiddlewareFactory($container, $container->get(ResponseFactoryInterface::class), $container->get(PipelineFactoryInterface::class));
+        return MiddlewareFactory::fromContainer($container);
     }
 }
