@@ -62,8 +62,9 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     public function make($any): MiddlewareInterface
     {
         if (is_string($any)) {
+            
             if (($has = $this->container->has($any)) && is_subclass_of($any, MiddlewareInterface::class)) {
-                return $this->service($any);
+                return $this->getService($any);
             }
 
             if ($has && is_subclass_of($any, RequestHandlerInterface::class)) {
@@ -71,16 +72,20 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             }
 
             if (str_contains($any, self::separator) !== false) {
-                list($service, $method) = explode(self::separator, $any, 2);
+                list($serviceID, $method) = explode(self::separator, $any, 2);
 
-                if ($this->container->has($service) && method_exists($service, $method)) {
-                    $any = [$this->service($service), $method];
+                if ($this->container->has($serviceID)) {
+                    if (!method_exists($service = $this->getService($serviceID), $method)) {
+                        goto end;
+                    }
+                    
+                    $any = [$this->getService($serviceID), $method];
                     goto callback;
                 }
             }
 
             if ($has && method_exists($any, '__invoke')){
-                $any = $this->service($any);
+                $any = $this->getService($any);
                 goto invokable;
             }
 
@@ -100,6 +105,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
 
         if (is_callable($any)) {
+            
             if (is_object($any)) {
                 invokable:
                 $method = (new ReflectionObject($any))
@@ -140,11 +146,13 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             }
 
             if ($this->checkType($parameters[0], ServerRequestInterface::class)) {
+                
                 if ($count == 1) {
                     return new Decorator\CallbackDecorator($any);
                 }
 
                 if ($count == 2) {
+                    
                     if ($this->checkType($parameters[1], RequestHandlerInterface::class)) {
                         return new Decorator\CallbackDecorator($any);
                     }
@@ -155,6 +163,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 }
 
                 if ($count === 3) {
+                    
                     if ($this->checkType($parameters[1], ResponseInterface::class)
                         && $this->declaresCallable($parameters[2])) {
                         return new Decorator\DoublePassDecorator($any, $this->responseFactory);
@@ -174,18 +183,18 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     }
 
     /**
-     * @param string $service
+     * @param string $id
      * @return object
      * @throws UnresolvableMiddlewareException
      */
-    private function service(string $service): object
+    private function getService(string $serviceID): object
     {
         try {
-            return $this->container->get($service);
+            return $this->container->get($serviceID);
         } catch (ParseError $e) {
             throw $e;
         } catch (Throwable $e) {
-            throw UnresolvableMiddlewareException::fromPrevious($e, $service);
+            throw UnresolvableMiddlewareException::fromPrevious($e, $serviceID);
         }
     }
 
