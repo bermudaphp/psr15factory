@@ -45,4 +45,15 @@ final class AggregateMiddlewareFactory implements MiddlewareFactoryInterface
 
         throw UnresolvableMiddlewareException::notCreatable($any);
     }
+    
+    /**
+     * @param MiddlewareFactoryInterface[] $factories
+     * @return self
+     */
+    public static function fromFactories(iterable $factories): MiddlewareInterface
+    {
+        $instance = new self;
+        foreach ($factories as $factory) $instance->addFactory($factory);
+        return $instance;
+    }
 }
