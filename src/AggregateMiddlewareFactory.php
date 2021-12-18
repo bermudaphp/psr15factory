@@ -50,7 +50,7 @@ final class AggregateMiddlewareFactory implements MiddlewareFactoryInterface
      * @param MiddlewareFactoryInterface[] $factories
      * @return self
      */
-    public static function fromFactories(iterable $factories): MiddlewareInterface
+    public static function fromFactories(iterable $factories): self
     {
         $instance = new self;
         foreach ($factories as $factory) $instance->addFactory($factory);
