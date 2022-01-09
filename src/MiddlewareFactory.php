@@ -175,7 +175,10 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
 
         if (is_iterable($any)) {
-            return $this->pipelineFactory->make(is_array($any) ? $any : iterator_to_array($any));
+            $pipeline = $this->pipelineFactory->make();
+            foreach ($any as $m) $pipeline->pipe($this->make($m));
+            
+            return $pipeline;
         }
 
         end:
