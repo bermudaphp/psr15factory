@@ -7,11 +7,11 @@
     }
   },
   "require": {
-    "php": ">= 7.4 || ~8.0.0",
-    "bermudaphp/config": "^1.0",
-    "bermudaphp/pipeline": "^1.0",
-    "bermudaphp/checktype": "^1.0",
-    "bermudaphp/stringy": "^1.2 || ^2.0",
+    "php": "^7.4|^8.0|^8.1",
+    "bermudaphp/config": "^1.1.1",
+    "bermudaphp/pipeline": "^1.2.3",
+    "bermudaphp/checktype": "^1.0.1",
+    "bermudaphp/stringy": "^1.2|^2.0.2",
     "psr/container": "^1.0"
   }
 }
