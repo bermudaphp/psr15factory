@@ -6,7 +6,9 @@ use Bermuda\CheckType\Type;
 use Bermuda\Pipeline\PipelineFactory;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 use ParseError;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -128,13 +130,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
 
             if ($returnType->getName() == MiddlewareInterface::class ||
                 is_subclass_of($returnType->getName(), MiddlewareInterface::class)) {
-                try {
-                    return $any($this->container);
-                } catch (ParseError $e) {
-                    throw $e;
-                } catch (Throwable $e) {
-                    throw UnresolvableMiddlewareException::fromPrevious($e, $any);
-                }
+                return $any($this->container);
             }
 
             if (($count = count($parameters = $method->getParameters())) == 0) {
@@ -194,9 +190,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         try {
             return $this->container->get($serviceID);
-        } catch (ParseError $e) {
-            throw $e;
-        } catch (Throwable $e) {
+        } catch (ContainerExceptionInterface|NotFoundExceptionInterface $e) {
             throw UnresolvableMiddlewareException::fromPrevious($e, $serviceID);
         }
     }
