@@ -2,12 +2,12 @@
 
 namespace Bermuda\MiddlewareFactory\Decorator;
 
+use RuntimeException;
+use ReflectionParameter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use ReflectionParameter;
-use RuntimeException;
 
 final class ArgumentDecorator implements MiddlewareInterface
 {
@@ -44,9 +44,11 @@ final class ArgumentDecorator implements MiddlewareInterface
                 continue;
             }
 
-            if (($cls = $param->getClass()) != null) {
-                $cls = $cls->getName();
+            $cls = $param->getType() && !$param->getType()->isBuiltin()
+                ? $param->getType()->getName() : null;
 
+            if ($cls != null) {
+                $cls = $cls->getName();
                 foreach ($attributes as $attribute) {
                     if ($attribute instanceof $cls) {
                         $args[] = $attribute;
@@ -67,7 +69,7 @@ final class ArgumentDecorator implements MiddlewareInterface
                 continue;
             }
 
-            throw new RuntimeException('Missing request attribute with name: ' . $param->name);
+            throw new RuntimeException("Request attribute [$param->name] for route handler is missing");
         }
 
         return call_user_func_array($this->handler, $args);
