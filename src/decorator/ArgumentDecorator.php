@@ -39,16 +39,18 @@ final class ArgumentDecorator implements MiddlewareInterface
         $attributes = $request->getAttributes();
 
         foreach ($this->params as $param) {
+            if ($param->getType()?->getName() === ServerRequestInterface::class) {
+                $args[] = $request;
+                continue;
+            }
+
             if (array_key_exists($param->getName(), $attributes)) {
                 $args[] = $attributes[$param->getName()];
                 continue;
             }
 
-            $cls = $param->getType() && !$param->getType()->isBuiltin()
-                ? $param->getType()->getName() : null;
-
-            if ($cls != null) {
-                $cls = $cls->getName();
+            if (!$param->getType()?->isBuiltin()) {
+                $cls = $param->getType()->getName();
                 foreach ($attributes as $attribute) {
                     if ($attribute instanceof $cls) {
                         $args[] = $attribute;
