@@ -9,16 +9,11 @@ use ReflectionFunction;
 use ReflectionMethod;
 use RuntimeException;
 use Throwable;
-use function Bermuda\str_pos;
 
 final class UnresolvableMiddlewareException extends RuntimeException
 {
-    private $middleware;
-
-    public function __construct(?string $message = null, $middleware = null, ?Throwable $prev = null)
+    public function __construct(?string $message = null, public readonly mixed $middleware = null, ?Throwable $prev = null)
     {
-        $this->middleware = $middleware;
-
         if (!$message && is_string($middleware)) {
             $message = 'Unresolvable middleware: ' . $middleware;
         }
@@ -26,6 +21,11 @@ final class UnresolvableMiddlewareException extends RuntimeException
         parent::__construct($message ?? 'Unresolvable middleware', 0, $prev);
     }
 
+    /**
+     * @param UnresolvableMiddlewareException $e
+     * @param array $backtrace
+     * @return void
+     */
     public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
     {
         $self = new self($e->getMessage(), $e->getMiddleware(), $e->getPrevious());
@@ -36,11 +36,19 @@ final class UnresolvableMiddlewareException extends RuntimeException
         throw $self;
     }
 
+    /**
+     * @return mixed|null
+     */
     public function getMiddleware()
     {
         return $this->middleware;
     }
 
+    /**
+     * @param Throwable $e
+     * @param $middleware
+     * @return static
+     */
     public static function fromPrevious(Throwable $e, $middleware): self
     {
         return new self(
@@ -49,6 +57,10 @@ final class UnresolvableMiddlewareException extends RuntimeException
             $middleware, $e);
     }
 
+    /**
+     * @param $any
+     * @return static
+     */
     public static function notCreatable($any): self
     {
         $type = Type::gettype($any, Type::objectAsClass);
@@ -60,6 +72,11 @@ final class UnresolvableMiddlewareException extends RuntimeException
         return new self('Cannot create middleware for this type: ' . $type, $any);
     }
 
+    /**
+     * @param callable $any
+     * @return string
+     * @throws \ReflectionException
+     */
     private static function getTypeForCallable(callable $any): string
     {
         if (is_object($any)) {
@@ -70,13 +87,18 @@ final class UnresolvableMiddlewareException extends RuntimeException
             return (new ReflectionMethod($any[0], $any[1]))->getName();
         }
 
-        if (str_pos($any, '::') !== false) {
+        if (str_contains($any, '::')) {
             return (new ReflectionMethod($any))->getName();
         }
 
         return (new ReflectionFunction($any))->getName();
     }
 
+    /**
+     * @param callable $any
+     * @param string $returnType
+     * @return static
+     */
     public static function invalidReturnType(callable $any, string $returnType): self
     {
         return new self(
