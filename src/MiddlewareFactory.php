@@ -2,23 +2,26 @@
 
 namespace Bermuda\MiddlewareFactory;
 
+use ReflectionFunction;
+use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionObject;
+use ReflectionParameter;
+use ReflectionUnionType;
 use Bermuda\CheckType\Type;
+use Bermuda\Pipeline\{PipelineFactory, PipelineFactoryInterface};
 use Psr\Container\{ContainerExceptionInterface, ContainerInterface, NotFoundExceptionInterface};
 use Psr\Http\Message\{ResponseFactoryInterface, ResponseInterface, ServerRequestInterface};
-use Psr\Http\Server\{RequestHandlerInterface, MiddlewareInterface};
-use Bermuda\Pipeline\{PipelineFactory, PipelineFactoryInterface};
-use {ReflectionFunction, ReflectionMethod, ReflectionNamedType, ReflectionObject, 
-     ReflectionParameter, ReflectionUnionType};
-use function Bermuda\String\str_contains;
+use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
 
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     public const separator = '@';
     public function __construct(
-        private ContainerInterface       $container,
+        private ContainerInterface $container,
         private ResponseFactoryInterface $responseFactory,
         private ?PipelineFactoryInterface $pipelineFactory = new PipelineFactory
-    ){
+    ) {
     }
 
     /**
@@ -54,12 +57,12 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             if (($has = $this->container->has($any)) && is_subclass_of($any, MiddlewareInterface::class)) {
                 return $this->getService($any);
             }
-            
+
             if ($has && is_subclass_of($any, RequestHandlerInterface::class)) {
                 return new Decorator\RequestHandlerDecorator($this->container->get($any));
             }
-            
-            if (str_contains($any, self::separator) !== false) {
+
+            if (str_contains($any, self::separator)) {
                 list($serviceID, $method) = explode(self::separator, $any, 2);
                 if ($this->container->has($serviceID)) {
                     if (!method_exists($service = $this->getService($serviceID), $method)) {
@@ -204,7 +207,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 : [$reflectionType];
             return in_array('callable', array_map(fn(ReflectionNamedType $t) => $t->getName(), $types));
         }
-        
+
         return $reflectionParameter->isCallable();
     }
 }
