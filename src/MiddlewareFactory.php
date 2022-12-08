@@ -2,26 +2,41 @@
 
 namespace Bermuda\MiddlewareFactory;
 
+use Bermuda\CheckType\Type;
+use Bermuda\Pipeline\PipelineFactory;
+use Bermuda\Pipeline\PipelineFactoryInterface;
+use ParseError;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
+use Psr\Container\NotFoundExceptionInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionObject;
 use ReflectionParameter;
-use ReflectionUnionType;
-use Bermuda\CheckType\Type;
-use Bermuda\Pipeline\{PipelineFactory, PipelineFactoryInterface};
-use Psr\Container\{ContainerExceptionInterface, ContainerInterface, NotFoundExceptionInterface};
-use Psr\Http\Message\{ResponseFactoryInterface, ResponseInterface, ServerRequestInterface};
-use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
+use Throwable;
 
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     public const separator = '@';
     public function __construct(
-        private ContainerInterface $container,
-        private ResponseFactoryInterface $responseFactory,
-        private ?PipelineFactoryInterface $pipelineFactory = new PipelineFactory
+        private readonly ContainerInterface $container,
+        private readonly ResponseFactoryInterface $responseFactory,
+        private readonly PipelineFactoryInterface $pipelineFactory = new PipelineFactory
     ) {
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function __invoke($any): MiddlewareInterface
+    {
+        return $this->make($any);
     }
 
     /**
@@ -33,19 +48,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     public static function fromContainer(ContainerInterface $container): self
     {
         return new self(
-            $container, $container->get(ResponseFactoryInterface::class),
-            $container->has(PipelineFactoryInterface::class) ?
-                $container->get(PipelineFactoryInterface::class)
-                : new PipelineFactory()
-        );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function __invoke($any): MiddlewareInterface
-    {
-        return $this->make($any);
+            $container, $container->get(ResponseFactoryInterface::class), 
+            $container->has(PipelineFactoryInterface::class) ? 
+            $container->get(PipelineFactoryInterface::class) 
+            : new PipelineFactory()
+       );
     }
 
     /**
@@ -62,18 +69,20 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 return new Decorator\RequestHandlerDecorator($this->container->get($any));
             }
 
-            if (str_contains($any, self::separator)) {
+            if (str_contains($any, self::separator) !== false) {
                 list($serviceID, $method) = explode(self::separator, $any, 2);
+
                 if ($this->container->has($serviceID)) {
                     if (!method_exists($service = $this->getService($serviceID), $method)) {
                         goto end;
                     }
+                    
                     $any = [$this->getService($serviceID), $method];
                     goto callback;
                 }
             }
 
-            if ($has && method_exists($any, '__invoke')) {
+            if ($has && method_exists($any, '__invoke')){
                 $any = $this->getService($any);
                 goto invokable;
             }
@@ -128,6 +137,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             }
 
             if ($this->checkType($parameters[0], ServerRequestInterface::class)) {
+                
                 if ($count == 1) {
                     return new Decorator\CallbackDecorator($any);
                 }
@@ -164,8 +174,9 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     }
 
     /**
-     * @param string $serviceID
+     * @param string $id
      * @return object
+     * @throws UnresolvableMiddlewareException
      */
     private function getService(string $serviceID): object
     {
@@ -176,6 +187,10 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         }
     }
 
+    /**
+     * @param string $type
+     * @return bool
+     */
     private function checkReturnType(string $type): bool
     {
         return $type == MiddlewareInterface::class || $type == ResponseInterface::class
@@ -193,21 +208,30 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         if (!($refType = $parameter->getType()) instanceof ReflectionNamedType) {
             return false;
         }
+
         return Type::isInterface($refType->getName(), $type)
             || is_subclass_of($refType->getName(), $type);
     }
 
+    /**
+     * @param ReflectionParameter $reflectionParameter
+     * @return bool
+     */
     private function declaresCallable(ReflectionParameter $reflectionParameter): bool
     {
-        if (version_compare(PHP_VERSION, '8.0.0') >= 0) {
-            $reflectionType = $reflectionParameter->getType();
-            if (!$reflectionType) return false;
-            $types = $reflectionType instanceof ReflectionUnionType
-                ? $reflectionType->getTypes()
-                : [$reflectionType];
-            return in_array('callable', array_map(fn(ReflectionNamedType $t) => $t->getName(), $types));
+        $reflectionType = $reflectionParameter->getType();
+        if (!$reflectionType) return false;
+
+        $types = $reflectionType instanceof \ReflectionUnionType
+            ? $reflectionType->getTypes()
+            : [$reflectionType];
+
+        foreach ($types as $type) {
+            if ($type->getName() == 'callable') {
+                return true;
+            }
         }
 
-        return $reflectionParameter->isCallable();
+        return false;
     }
 }
