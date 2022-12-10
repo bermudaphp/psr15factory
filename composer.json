@@ -7,7 +7,7 @@
     }
   },
   "require": {
-    "php": "^8.0|^8.1",
+    "php": "^8.1",
     "bermudaphp/config": "^1.1.1",
     "bermudaphp/pipeline": "^1.2.3",
     "bermudaphp/checktype": "^1.0.1",
