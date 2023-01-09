@@ -88,7 +88,7 @@ class MyCallback
     }
 }
 
-$middleware = $factory->make('MyCallback@methoodName');
+$middleware = $factory->make('MyCallback@methodName');
 $middleware instanceof MiddlewareInterface::class // true
 ```
 
