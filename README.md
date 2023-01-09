@@ -82,7 +82,7 @@ $middleware instanceof MiddlewareInterface::class // true
 
 class MyCallback
 {
-    public function methoodName(ServerRequestInterface $req) : ResponseInterface
+    public function methodName(ServerRequestInterface $req) : ResponseInterface
     {
         return new TextResponse('Hello World');
     }
