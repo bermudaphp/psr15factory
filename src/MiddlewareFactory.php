@@ -77,7 +77,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                         goto end;
                     }
                     
-                    $any = [$this->getService($serviceID), $method];
+                    $any = [$service, $method];
                     goto callback;
                 }
             }
