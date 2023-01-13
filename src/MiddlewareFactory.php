@@ -17,11 +17,19 @@ use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     public const separator = '@';
+    
+    private ContainerInterface $container;
+    private ResponseFactoryInterface $responseFactory;
+    private ?PipelineFactoryInterface $pipelineFactory;
+    
     public function __construct(
-        private ContainerInterface $container,
-        private ResponseFactoryInterface $responseFactory,
-        private ?PipelineFactoryInterface $pipelineFactory = new PipelineFactory
+        ContainerInterface $container, 
+        ResponseFactoryInterface $responseFactory, 
+        PipelineFactoryInterface $pipelineFactory = null
     ) {
+        $this->container = $container;
+        $this->$responseFactory = $responseFactory;
+        $this->pipelineFactory = $pipelineFactory ?? new PipelineFactory;
     }
 
     /**
@@ -36,7 +44,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             $container, $container->get(ResponseFactoryInterface::class),
             $container->has(PipelineFactoryInterface::class) ?
                 $container->get(PipelineFactoryInterface::class)
-                : new PipelineFactory()
+                : new PipelineFactory
         );
     }
 
@@ -62,13 +70,13 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
                 return new Decorator\RequestHandlerDecorator($this->container->get($any));
             }
 
-            if (str_contains($any, self::separator)) {
+            if (\strpos($any, self::separator) !== false) {
                 list($serviceID, $method) = explode(self::separator, $any, 2);
                 if ($this->container->has($serviceID)) {
                     if (!method_exists($service = $this->getService($serviceID), $method)) {
                         goto end;
                     }
-                    $any = [$this->getService($serviceID), $method];
+                    $any = [$service, $method];
                     goto callback;
                 }
             }
@@ -101,7 +109,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
             } elseif (is_array($any)) {
                 callback:
                 $method = new ReflectionMethod($any[0], $any[1]);
-            } elseif (str_contains($any, '::') !== false) {
+            } elseif (\strpos($any, '::') !== false) {
                 $method = new ReflectionMethod($any);
             } else {
                 str_callback:
