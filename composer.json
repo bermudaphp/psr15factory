@@ -3,7 +3,8 @@
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "Bermuda\\MiddlewareFactory\\": "src/"
+      "Bermuda\\MiddlewareFactory\\": "src/",
+      "Bermuda\\MiddlewareFactory\\Decorator\\": "src/decorator/"
     }
   },
   "require": {
