@@ -9,7 +9,6 @@ use ReflectionFunction;
 use ReflectionMethod;
 use RuntimeException;
 use Throwable;
-use function Bermuda\str_pos;
 
 final class UnresolvableMiddlewareException extends RuntimeException
 {
@@ -70,7 +69,7 @@ final class UnresolvableMiddlewareException extends RuntimeException
             return (new ReflectionMethod($any[0], $any[1]))->getName();
         }
 
-        if (str_pos($any, '::') !== false) {
+        if (strpos($any, '::') !== false) {
             return (new ReflectionMethod($any))->getName();
         }
 
