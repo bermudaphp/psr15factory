@@ -16,6 +16,9 @@ final class ClassnameFactory implements MiddlewareFactoryInterface
     ) {
     }
 
+    /**
+     * @inheritDoc
+     */
     public function make($any): MiddlewareInterface
     {
         try {
@@ -26,5 +29,13 @@ final class ClassnameFactory implements MiddlewareFactoryInterface
         } catch (ContainerExceptionInterface|NotFoundExceptionInterface $e) {
             throw UnresolvableMiddlewareException::fromPrevious($e, $any);
         }
+    }
+    
+    /**
+     * @inheritDoc
+     */
+    public function __invoke($any): MiddlewareInterface
+    {
+        return $this->make($any);
     }
 }
