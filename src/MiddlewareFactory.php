@@ -1,13 +1,13 @@
 <?php
 
-namespace MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 use Bermuda\ContainerAwareInterface;
 use Bermuda\Pipeline\PipelineFactoryInterface;
-use MiddlewareFactory\adapter\RequestHandlerAdapter;
-use MiddlewareFactory\strategy\CallableStrategy;
-use MiddlewareFactory\strategy\ClassNameStrategy;
-use MiddlewareFactory\strategy\StrategyInterface;
+use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
+use Bermuda\MiddlewareFactory\Strategy\CallableStrategy;
+use Bermuda\MiddlewareFactory\Strategy\ClassNameStrategy;
+use Bermuda\MiddlewareFactory\Strategy\StrategyInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -27,7 +27,6 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
         private readonly ContainerInterface $container,
         private readonly PipelineFactoryInterface $pipelineFactory,
     ) {
-
     }
 
     public function makeMiddleware(mixed $any): MiddlewareInterface
