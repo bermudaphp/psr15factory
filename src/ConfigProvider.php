@@ -1,12 +1,10 @@
 <?php
 
-namespace MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
-use Bermuda\Config\AsConfig;
-use MiddlewareFactory\strategy\CallableStrategy;
-use MiddlewareFactory\strategy\ClassNameStrategy;
+use MiddlewareFactory\Strategy\CallableStrategy;
+use MiddlewareFactory\Strategy\ClassNameStrategy;
 
-#[AsConfig]
 class ConfigProvider extends \Bermuda\Config\ConfigProvider
 {
     public const string CONFIG_KEY_STRATEGIES = 'Bermuda\MiddlewareFactory:strategies';
