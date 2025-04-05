@@ -4,7 +4,9 @@
   "autoload": {
     "psr-4": {
       "Bermuda\\MiddlewareFactory\\": "src/",
-      "Bermuda\\MiddlewareFactory\\Decorator\\": "src/decorator/"
+      "Bermuda\\MiddlewareFactory\\Adapter\\": "src/adapter/",
+      "Bermuda\\MiddlewareFactory\\Attribute\\": "src/attribute/",
+      "Bermuda\\MiddlewareFactory\\Strategy\\": "src/strategy/"
     }
   },
   "require": {
