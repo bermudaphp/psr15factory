@@ -1,6 +1,6 @@
 <?php
 
-namespace MiddlewareFactory;
+namespace Bermuda\MiddlewareFactory;
 
 use RuntimeException;
 use Throwable;
