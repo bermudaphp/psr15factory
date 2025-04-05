@@ -1,6 +1,6 @@
 <?php
 
-namespace MiddlewareFactory\attribute;
+namespace Bermuda\MiddlewareFactory\Attribute;
 
 use Psr\Http\Message\ServerRequestInterface;
 
