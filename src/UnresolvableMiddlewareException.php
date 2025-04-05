@@ -1,19 +1,17 @@
 <?php
 
-namespace Bermuda\MiddlewareFactory;
+namespace MiddlewareFactory;
 
-use Bermuda\CheckType\Type;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use ReflectionFunction;
-use ReflectionMethod;
 use RuntimeException;
 use Throwable;
 
 final class UnresolvableMiddlewareException extends RuntimeException
 {
-    public function __construct(?string $message = null, public readonly mixed $middleware = null, ?Throwable $prev = null)
-    {
+    public function __construct(
+        public readonly mixed $middleware,
+        ?string $message = null,
+        ?Throwable $prev = null
+    ) {
         if (!$message && is_string($middleware)) {
             $message = 'Unresolvable middleware: ' . $middleware;
         }
@@ -21,27 +19,12 @@ final class UnresolvableMiddlewareException extends RuntimeException
         parent::__construct($message ?? 'Unresolvable middleware', 0, $prev);
     }
 
-    /**
-     * @param UnresolvableMiddlewareException $e
-     * @param array $backtrace
-     * @return void
-     */
-    public static function reThrow(UnresolvableMiddlewareException $e, array $backtrace): void
+    public function setBacktrace(array $backtrace): self
     {
-        $self = new self($e->getMessage(), $e->getMiddleware(), $e->getPrevious());
+        $this->file = $backtrace['file'];
+        $this->line = $backtrace['line'];
 
-        $self->file = $backtrace['file'];
-        $self->line = $backtrace['line'];
-
-        throw $self;
-    }
-
-    /**
-     * @return mixed|null
-     */
-    public function getMiddleware()
-    {
-        return $this->middleware;
+        return $this;
     }
 
     /**
@@ -49,62 +32,33 @@ final class UnresolvableMiddlewareException extends RuntimeException
      * @param $middleware
      * @return static
      */
-    public static function fromPrevious(Throwable $e, $middleware): self
+    public static function fromPrev(Throwable $e, $middleware): self
     {
-        return new self(
-            sprintf('Code execution failed in file: %s on line: %s',
-                $e->getFile(), $e->getLine()),
-            $middleware, $e);
+        return new self($middleware, sprintf('Code execution failed in file: %s on line: %s',
+            $e->getFile(), $e->getLine()), $e);
     }
 
     /**
-     * @param $any
-     * @return static
+     * @param mixed $middleware
+     * @return self
      */
-    public static function notCreatable($any): self
+    public static function makeFrom(mixed $middleware): self
     {
-        $type = Type::gettype($any, Type::objectAsClass);
-
-        if ($type == Type::callable) {
-            $type = static::getTypeForCallable($any);
+        if ($middleware instanceof \Closure) {
+            return new self($middleware, 'Cannot create middleware from closure');
         }
+        if (is_callable($middleware)) return new self($middleware, 'Cannot create middleware from callable: '.self::getTypeForCallable($middleware));
+        if (is_object($middleware)) return new self($middleware, 'Cannot create middleware from object: ' . $middleware::class);
+        if (is_string($middleware)) return new self($middleware, 'Cannot create middleware from string: ' . $middleware);
 
-        return new self('Cannot create middleware for this type: ' . $type, $any);
+        return new self('Cannot create middleware', $middleware);
     }
 
-    /**
-     * @param callable $any
-     * @return string
-     * @throws \ReflectionException
-     */
     private static function getTypeForCallable(callable $any): string
     {
-        if (is_object($any)) {
-            return get_class($any);
-        }
+        if (is_object($any)) return $any::class;
+        if (is_array($any)) return is_object($any[0]) ? $any[0]::class . "::$any[1]" : "$any[0]::$any[1]";
 
-        if (is_array($any)) {
-            return (new ReflectionMethod($any[0], $any[1]))->getName();
-        }
-
-        if (str_contains($any, '::')) {
-            return (new ReflectionMethod($any))->getName();
-        }
-
-        return (new ReflectionFunction($any))->getName();
-    }
-
-    /**
-     * @param callable $any
-     * @param string $returnType
-     * @return static
-     */
-    public static function invalidReturnType(callable $any, string $returnType): self
-    {
-        return new self(
-            sprintf('Callable middleware should return an %s or %s. Returned: %s',
-                ResponseInterface::class, MiddlewareInterface::class, $returnType),
-            $any
-        );
+        return $any;
     }
 }
