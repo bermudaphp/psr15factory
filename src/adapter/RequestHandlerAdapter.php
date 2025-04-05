@@ -1,6 +1,6 @@
 <?php
 
-namespace MiddlewareFactory\adapter;
+namespace Bermuda\MiddlewareFactory\Adapter;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
