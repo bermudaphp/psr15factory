@@ -88,7 +88,7 @@ class MyCallback
     }
 }
 
-$middleware = $factory->make('MyCallback@methodName');
+$middleware = $factory->make('MyCallback::methodName');
 $middleware instanceof MiddlewareInterface::class // true
 ```
 
@@ -111,7 +111,7 @@ $factory->make('Invokable::class') instanceof MiddlewareInterface::class ; // tr
 
 ```php
 
-$middleware = $factory->make(static function(string $name): ResponseInterface
+$middleware = $factory->make(static function(#[RequestAttributes('name')] string $name): ResponseInterface
 {
     return new TextResponse(sprintf('Hello, %s!', $name));
 });
@@ -125,49 +125,11 @@ $response instanceof TextResponse // true
 ```php
 function(): ResponseInterface ;
 function(ContainerInterface $container): ResponseInterface ;
-function(mixed ... $requestAttributeName): ResponseInterface ;
+function(mixed ... $args): ResponseInterface ;
 function(ServerRequestInterface $req): ResponseInterface ;
 function(ServerRequestInterface $req, RequestHandlerInterface $handler): ResponseInterface ;
 function(ServerRequestInterface $req, ResponseInterface $resp, callable $next): ResponseInterface ;
 function(ServerRequestInterface $req, callable $next): ResponseInterface ;
 ```
-
-## Aggregation MiddlewareFactory
-
-```php
-
-$myFactory = new class implements MiddlewareFactoryInterface
-{
-    /**
-     * @param mixed $any
-     * @return MiddlewareInterface
-     * @throws UnresolvableMiddlewareException
-     */
-    public function make($any): MiddlewareInterface
-    {
-        if (is_string($any) && $any == 'redirect')
-        {
-            return new MyRedirectMiddleware ;
-        }
-        
-        throw new UnresolvableMiddlewareException;
-    }
-    
-    /**
-     * Alias for self::make 
-     */
-    public function __invoke($any) : MiddlewareInterface
-    {
-        return $this->make($any);
-    }
-}
-
-$factory = (new AggregateMiddlewareFactory)->addFactory($factory)
-                ->addFactory($myFactory);
-
-$middleware = $factory->make('redirect');
-$middleware instanceof MiddlewareInterface // true 
-```
-
 
 
