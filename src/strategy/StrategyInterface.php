@@ -1,6 +1,6 @@
 <?php
 
-namespace MiddlewareFactory\strategy;
+namespace Bermuda\MiddlewareFactory\Strategy;
 
 use Psr\Http\Server\MiddlewareInterface;
 
