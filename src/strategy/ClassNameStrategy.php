@@ -1,8 +1,8 @@
 <?php
 
-namespace MiddlewareFactory\strategy;
+namespace Bermuda\MiddlewareFactory\Strategy;
 
-use MiddlewareFactory\adapter\RequestHandlerAdapter;
+use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -15,7 +15,6 @@ final class ClassNameStrategy implements StrategyInterface
         private readonly ContainerInterface $container
     ) {
     }
-
 
     /**
      * @throws ContainerExceptionInterface
