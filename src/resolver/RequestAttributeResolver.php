@@ -6,13 +6,12 @@ use Bermuda\MiddlewareFactory\Attribute\RequestAttribute;
 use Bermuda\ParameterResolver\Resolver\ParameterResolverInterface;
 use Bermuda\Reflection\TypeMatcher;
 use Psr\Http\Message\ServerRequestInterface;
-use ReflectionParameter;
 
 final class RequestAttributeResolver implements ParameterResolverInterface
 {
     public const string REQUEST_PARAMETER_KEY = ServerRequestInterface::class;
 
-    public function resolve(ReflectionParameter $parameter, array $params = []): ?array
+    public function resolve(\ReflectionParameter $parameter, array $params = []): ?array
     {
         if (!isset($params[self::REQUEST_PARAMETER_KEY])) {
             throw new ResolverException('Missing $params['.self::REQUEST_PARAMETER_KEY.'] parameter');
@@ -37,7 +36,7 @@ final class RequestAttributeResolver implements ParameterResolverInterface
         return [$name, $request->getAttributes()[$name]];
     }
 
-    private function checkParamType(ReflectionParameter $parameter, mixed $entry)
+    private function checkParamType(\ReflectionParameter $parameter, mixed $entry)
     {
         if ($parameter->getType() !== null) {
             $matcher = new TypeMatcher();
