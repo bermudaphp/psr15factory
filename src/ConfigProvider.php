@@ -2,8 +2,8 @@
 
 namespace Bermuda\MiddlewareFactory;
 
-use MiddlewareFactory\Strategy\CallableStrategy;
-use MiddlewareFactory\Strategy\ClassNameStrategy;
+use Bermuda\MiddlewareFactory\Strategy\CallableStrategy;
+use Bermuda\MiddlewareFactory\Strategy\ClassNameStrategy;
 
 class ConfigProvider extends \Bermuda\Config\ConfigProvider
 {
