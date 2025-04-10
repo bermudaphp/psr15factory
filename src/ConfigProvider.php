@@ -22,4 +22,9 @@ class ConfigProvider extends \Bermuda\Config\ConfigProvider
     {
         return [MiddlewareFactoryInterface::class => MiddlewareFactory::class];
     }
+
+    protected function getProviders(): array
+    {
+        return [\Bermuda\ParameterResolver\ConfigProvider::class];
+    }
 }
