@@ -9,7 +9,7 @@ use Bermuda\ParameterResolver\ParameterResolver;
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
 use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
 use Bermuda\MiddlewareFactory\UnresolvableMiddlewareException;
-use Bermuda\ParameterResolver\Resolver\ResolverCollector;
+use Bermuda\ParameterResolver\ResolverCollector;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
