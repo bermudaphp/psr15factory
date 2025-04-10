@@ -5,7 +5,7 @@ namespace Bermuda\MiddlewareFactory\Strategy;
 use Bermuda\CheckType\Type;
 use Bermuda\MiddlewareFactory\Resolver\FallbackRequestHandlerResolver;
 use Bermuda\MiddlewareFactory\Resolver\RequestAttributeResolver;
-use Bermuda\ParameterResolver\Resolver\ParameterResolver;
+use Bermuda\ParameterResolver\ParameterResolver;
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
 use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
 use Bermuda\MiddlewareFactory\UnresolvableMiddlewareException;
