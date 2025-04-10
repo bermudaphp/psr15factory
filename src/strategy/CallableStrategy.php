@@ -3,15 +3,13 @@
 namespace Bermuda\MiddlewareFactory\Strategy;
 
 use Bermuda\CheckType\Type;
-use Invoker\Exception\InvocationException;
-use Invoker\Exception\NotCallableException;
-use Invoker\Exception\NotEnoughParametersException;
-use Invoker\InvokerInterface;
+use Bermuda\MiddlewareFactory\Resolver\FallbackRequestHandlerResolver;
+use Bermuda\MiddlewareFactory\Resolver\RequestAttributeResolver;
+use Bermuda\ParameterResolver\Resolver\ParameterResolver;
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
 use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
-use Bermuda\MiddlewareFactory\Attribute\Config;
-use Bermuda\MiddlewareFactory\Attribute\Container;
 use Bermuda\MiddlewareFactory\UnresolvableMiddlewareException;
+use Bermuda\ParameterResolver\Resolver\ResolverCollector;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -25,11 +23,19 @@ use ReflectionParameter;
 
 class CallableStrategy implements StrategyInterface
 {
+    private ParameterResolver $resolver;
+    
     public function __construct(
         private readonly ContainerInterface $container,
-        private readonly InvokerInterface   $invoker,
+        ResolverCollector $collector,
         private readonly ResponseFactoryInterface $responseFactory,
     ) {
+        $this->resolver = ParameterResolver::createFromCollector(
+            $collector->withResolvers([
+                new RequestAttributeResolver,
+                new FallbackRequestHandlerResolver
+            ], true)
+        );
     }
 
     /**
@@ -44,7 +50,10 @@ class CallableStrategy implements StrategyInterface
         $reflector = null;
 
         if (is_callable($middleware)) {
-            if (is_object($middleware)) $reflector = new \ReflectionMethod($middleware, '__invoke');
+            if (is_object($middleware)) {
+                if ($middleware instanceof \Closure) $reflector = new \ReflectionFunction($middleware);
+                else $reflector = new \ReflectionMethod($middleware, '__invoke');
+            }
             elseif (is_array($middleware)) $reflector = new \ReflectionMethod($middleware[0], $middleware[1]);
             elseif (is_string($middleware)) {
                 if (str_contains($middleware, '::')) $reflector = $this->getReflector($middleware);
@@ -127,7 +136,7 @@ class CallableStrategy implements StrategyInterface
             }
         }
 
-        return CallableAdapter::adoptAttributes($middleware, $this->container, $this->invoker, $parameters);
+        return CallableAdapter::adopt($middleware, $this->resolver, $parameters);
     }
 
     /**
@@ -192,17 +201,7 @@ class CallableStrategy implements StrategyInterface
      */
     private function call(callable $callable, array $parameters): MiddlewareInterface|RequestHandlerInterface
     {
-        $params = [];
-        foreach ($parameters as $parameter) {
-            $attribute = $parameter->getAttributes(Container::class)[0] ?? null;
-            if ($attribute || ($attribute = $parameter->getAttributes(Config::class)[0] ?? null) !== null) {
-                $attribute = $attribute->newInstance();
-                list($key, $value) = $attribute->getParameter($this->container, $parameter);
-                $params[$key] = $value;
-            }
-        }
-
-        return $this->invoker->call($callable, $params);
+        return call_user_func_array($callable, $this->resolver->resolve($parameters));
     }
 
     /**
@@ -211,6 +210,9 @@ class CallableStrategy implements StrategyInterface
      */
     public static function createFromContainer(ContainerInterface $container): CallableStrategy
     {
-        return new static($container, $container->get(InvokerInterface::class), $container->get(ResponseFactoryInterface::class));
+        return new static($container,
+            $container->get(ResolverCollector::class), 
+            $container->get(ResponseFactoryInterface::class)
+        );
     }
 }
