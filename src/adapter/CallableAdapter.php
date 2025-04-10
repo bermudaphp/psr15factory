@@ -2,17 +2,19 @@
 
 namespace Bermuda\MiddlewareFactory\Adapter;
 
-use Invoker\InvokerInterface;
-use Bermuda\MiddlewareFactory\Attribute\Config;
-use Bermuda\MiddlewareFactory\Attribute\Container;
-use Bermuda\MiddlewareFactory\Attribute\RequestAttributes;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Bermuda\MiddlewareFactory\Resolver\RequestAttributeResolver;
+use Bermuda\ParameterResolver\Resolver\ParameterResolver;
+use Bermuda\ParameterResolver\Resolver\ParameterResolverInterface;
 
+/**
+ * @internal
+ */
 class CallableAdapter implements MiddlewareInterface
 {
     protected $callable;
@@ -76,59 +78,31 @@ class CallableAdapter implements MiddlewareInterface
     }
 
     /**
-     * @param callable $callable
-     * @param ContainerInterface $container
      * @param \ReflectionParameter[] $parameters
-     * @return CallableAdapter
      */
-    public static function adoptAttributes(
+    public static function adopt(
         callable $callable,
-        ContainerInterface $container,
-        InvokerInterface $invoker,
+        ParameterResolver $resolver,
         array $parameters
     ): CallableAdapter
     {
-        return new class($callable, $container, $invoker, $parameters) extends CallableAdapter
+        return new class($callable, $resolver, $parameters) extends CallableAdapter
         {
+            private ParameterResolver $resolver;
             public function __construct(
                 callable $callable,
-                private readonly ContainerInterface $container,
-                private readonly InvokerInterface $invoker,
+                ParameterResolver $resolver,
                 private readonly array $parameters
             ) {
                 parent::__construct($callable);
+                $this->resolver = $resolver;
             }
 
             public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
             {
-                $params = [];
-                foreach ($this->parameters as $parameter) {
-                    $attribute = $this->getAttribute($parameter, [Container::class, Config::class]);
-                    if ($attribute) {
-                        list($key, $value) = $attribute->getParameter($this->container, $parameter);
-                        $params[$key] = $value;
-                        continue;
-                    }
-
-                    $attribute = $this->getAttribute($parameter, RequestAttributes::class);
-                    if ($attribute) {
-                        list($key, $value) = $attribute->getParameter($request, $parameter);
-                        $params[$key] = $value;
-                    }
-                }
-
-                return $this->invoker->call($this->callable, $params);
-            }
-
-            private function getAttribute(\ReflectionParameter $parameter, string|array $classes): null|Config|Container|RequestAttributes
-            {
-                is_array($classes)?: $classes = [$classes];
-                foreach ($classes as $class) {
-                    $a = $parameter->getAttributes($class)[0] ?? null;
-                    if ($a) return $a->newInstance();
-                }
-
-                return null;
+                return call_user_func_array($this->callable,
+                    $this->resolver->resolve($this->parameters, [RequestAttributeResolver::REQUEST_PARAMETER_KEY => $request])
+                );
             }
         };
     }
