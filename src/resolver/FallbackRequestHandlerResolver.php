@@ -3,9 +3,10 @@
 namespace Bermuda\MiddlewareFactory\Resolver;
 
 use Bermuda\MiddlewareFactory\Attribute\FallbackRequestHandler;
+use Bermuda\ParameterResolver\ResolverException;
 use Bermuda\Reflection\TypeMatcher;
 use Psr\Http\Message\ServerRequestInterface;
-use Bermuda\ParameterResolver\Resolver\ParameterResolverInterface;
+use Bermuda\ParameterResolver\ParameterResolverInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 final class FallbackRequestHandlerResolver implements ParameterResolverInterface
@@ -14,6 +15,10 @@ final class FallbackRequestHandlerResolver implements ParameterResolverInterface
 
     public function resolve(\ReflectionParameter $parameter, array $params = []): ?array
     {
+
+        $attribute = $parameter->getAttributes(FallbackRequestHandler::class)[0] ?? null;
+        if (!$attribute) return null;
+
         if (!isset($params[self::FALLBACK_HANDLER_PARAMETER_KEY])) {
             throw new ResolverException('Missing $params['.self::FALLBACK_HANDLER_PARAMETER_KEY.'] parameter');
         }
@@ -23,9 +28,6 @@ final class FallbackRequestHandlerResolver implements ParameterResolverInterface
         }
 
         $handler = $params[self::REQUEST_PARAMETER_KEY];
-
-        $attribute = $parameter->getAttributes(FallbackRequestHandler::class)[0] ?? null;
-        if (!$attribute) return null;
 
         $this->checkParamType($parameter, $handler);
 

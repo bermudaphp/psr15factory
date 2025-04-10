@@ -3,7 +3,8 @@
 namespace Bermuda\MiddlewareFactory\Resolver;
 
 use Bermuda\MiddlewareFactory\Attribute\RequestAttribute;
-use Bermuda\ParameterResolver\Resolver\ParameterResolverInterface;
+use Bermuda\ParameterResolver\ParameterResolverInterface;
+use Bermuda\ParameterResolver\ResolverException;
 use Bermuda\Reflection\TypeMatcher;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -13,6 +14,9 @@ final class RequestAttributeResolver implements ParameterResolverInterface
 
     public function resolve(\ReflectionParameter $parameter, array $params = []): ?array
     {
+        $attribute = $parameter->getAttributes(RequestAttribute::class)[0] ?? null;
+        if (!$attribute) return null;
+
         if (!isset($params[self::REQUEST_PARAMETER_KEY])) {
             throw new ResolverException('Missing $params['.self::REQUEST_PARAMETER_KEY.'] parameter');
         }
@@ -22,9 +26,6 @@ final class RequestAttributeResolver implements ParameterResolverInterface
         }
 
         $request = $params[self::REQUEST_PARAMETER_KEY];
-
-        $attribute = $parameter->getAttributes(RequestAttribute::class)[0] ?? null;
-        if (!$attribute) return null;
 
         $name = $attribute->getArguments()[0] ?? $parameter->getName();
         if (!isset($request->getAttributes()[$name])) {
