@@ -28,14 +28,13 @@ final class UnresolvableMiddlewareException extends RuntimeException
     }
 
     /**
-     * @param Throwable $e
+     * @param Throwable $prev
      * @param $middleware
      * @return static
      */
-    public static function fromPrev(Throwable $e, $middleware): self
+    public static function fromPrev(Throwable $prev, $middleware): self
     {
-        return new self($middleware, sprintf('Code execution failed in file: %s on line: %s',
-            $e->getFile(), $e->getLine()), $e);
+        return new self($middleware, $prev->getMessage(), $prev);
     }
 
     /**
