@@ -6,6 +6,7 @@
       "Bermuda\\MiddlewareFactory\\": "src/",
       "Bermuda\\MiddlewareFactory\\Adapter\\": "src/adapter/",
       "Bermuda\\MiddlewareFactory\\Attribute\\": "src/attribute/",
+      "Bermuda\\MiddlewareFactory\\Resolver\\": "src/resolver/",
       "Bermuda\\MiddlewareFactory\\Strategy\\": "src/strategy/"
     }
   },
@@ -15,6 +16,7 @@
     "bermudaphp/pipeline": "^1.2.4",
     "bermudaphp/checktype": "^1.0.2",
     "bermudaphp/container-aware": "^1.0.1",
+    "bermudaphp/di-resolver": "^1.0",
     "psr/container": "^1.0 || 2.0.2"
   }
 }
