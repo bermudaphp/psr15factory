@@ -9,8 +9,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Bermuda\MiddlewareFactory\Resolver\RequestAttributeResolver;
-use Bermuda\ParameterResolver\Resolver\ParameterResolver;
-use Bermuda\ParameterResolver\Resolver\ParameterResolverInterface;
+use Bermuda\ParameterResolver\ParameterResolver;
+use Bermuda\ParameterResolver\ParameterResolverInterface;
 
 /**
  * @internal
