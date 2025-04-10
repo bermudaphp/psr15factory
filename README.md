@@ -111,7 +111,7 @@ $factory->make('Invokable::class') instanceof MiddlewareInterface::class ; // tr
 
 ```php
 
-$middleware = $factory->make(static function(#[RequestAttributes('name')] string $name): ResponseInterface
+$middleware = $factory->make(static function(#[Bermuda\MiddlewareFactory\Attribute\RequestAttribute('name')] string $name): ResponseInterface
 {
     return new TextResponse(sprintf('Hello, %s!', $name));
 });
