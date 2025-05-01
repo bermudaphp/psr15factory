@@ -31,7 +31,7 @@ interface StrategyInterface
      * @return MiddlewareInterface|null Returns a valid MiddlewareInterface instance if the resolution is successful,
      *                                  or null if this strategy does not support the provided middleware definition.
      *
-     * @throws MiddlewareResolutionExceptionInterface If an error occurs during the middleware resolution process.
+     * @throws \Throwable If an error occurs during the middleware resolution process.
      */
     public function createMiddleware(mixed $middleware):? MiddlewareInterface;
 }
