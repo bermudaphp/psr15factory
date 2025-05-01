@@ -39,7 +39,7 @@ final class MiddlewarePipelineStrategy implements StrategyInterface
      * @return PipelineInterface|null Returns a PipelineInterface instance if $middleware is iterable,
      *                                otherwise returns null.
      */
-    public function makeMiddleware(mixed $middleware): ?PipelineInterface
+    public function createMiddleware(mixed $middleware): ?PipelineInterface
     {
         return is_iterable($middleware)
             ? $this->pipelineFactory->createMiddlewarePipeline($middleware)
