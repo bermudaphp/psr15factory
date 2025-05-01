@@ -57,7 +57,7 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
     {
         foreach ($this->strategies as $strategy) {
             try {
-                $middleware = $strategy->makeMiddleware($any);
+                $middleware = $strategy->createMiddleware($any);
                 if ($middleware) return $middleware;
             } catch (\Throwable $e) {
                 if (!$e instanceof MiddlewareResolutionExceptionInterface) $e = MiddlewareResolutionException::createFromPrev($any, $e);
