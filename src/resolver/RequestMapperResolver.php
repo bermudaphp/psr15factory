@@ -8,8 +8,7 @@ use Bermuda\MiddlewareFactory\Attribute\MapRequestPaylod;
 use Bermuda\ParameterResolver\ParameterResolutionException;
 use Bermuda\ParameterResolver\ParameterResolverInterface;
 use Bermuda\ParameterResolver\ResolverException;
-use dicontainer\FactoryInterface;
-use http\Env\Request;
+use Bermuda\DI\FactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use Reflection\Reflection;
