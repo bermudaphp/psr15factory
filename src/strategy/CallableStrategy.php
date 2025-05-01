@@ -47,7 +47,7 @@ final class CallableStrategy implements StrategyInterface
      * @return MiddlewareInterface|null Returns the adapted middleware or null if resolution failed.
      * @throws CallableResolverExceptionInterface When callable resolution fails.
      */
-    public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
+    public function createMiddleware(mixed $middleware): ?MiddlewareInterface
     {
         $callable = $this->executor->resolve($middleware);
         if (!$callable) return null;
