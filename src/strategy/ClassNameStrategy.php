@@ -45,7 +45,7 @@ final class ClassNameStrategy implements StrategyInterface
      *
      * @throws ContainerExceptionInterface if an error occurs while accessing the container.
      */
-    public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
+    public function createMiddleware(mixed $middleware): ?MiddlewareInterface
     {
         return match (true) {
             !is_string($middleware) => null,
