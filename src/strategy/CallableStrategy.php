@@ -2,14 +2,9 @@
 
 namespace Bermuda\MiddlewareFactory\Strategy;
 
-use Bermuda\CheckType\Type;
-use Bermuda\MiddlewareFactory\Resolver\FallbackRequestHandlerResolver;
-use Bermuda\MiddlewareFactory\Resolver\RequestAttributeResolver;
-use Bermuda\ParameterResolver\ParameterResolver;
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
-use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
-use Bermuda\MiddlewareFactory\UnresolvableMiddlewareException;
-use Bermuda\ParameterResolver\ResolverCollector;
+use dicontainer\CallableExecutorInterface;
+use dicontainer\CallableResolverExceptionInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -17,144 +12,73 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use Reflection\Reflection;
 use ReflectionNamedType;
 use ReflectionParameter;
 
-class CallableStrategy implements StrategyInterface
+/**
+ * CallableStrategy adapts a middleware defined as a callable into a PSR-15 compliant MiddlewareInterface.
+ *
+ * This strategy uses reflection to analyze the callable's signature and determine the correct adaptation:
+ * - For single-pass middleware (two parameters, where the second is callable), it creates a single-pass adapter.
+ * - For double-pass middleware (three parameters, with the second parameter type-hinted as ResponseInterface
+ *   and the third declared as callable), it creates a double-pass adapter.
+ * - For all other cases, it wraps the callable in a generic CallableAdapter.
+ */
+final class CallableStrategy implements StrategyInterface
 {
-    private ParameterResolver $resolver;
-    
     public function __construct(
-        private readonly ContainerInterface $container,
-        ResolverCollector $collector,
+        private readonly CallableExecutorInterface $executor,
         private readonly ResponseFactoryInterface $responseFactory,
     ) {
-        $this->resolver = ParameterResolver::createFromCollector(
-            $collector->withResolvers([
-                new RequestAttributeResolver,
-                new FallbackRequestHandlerResolver
-            ], true)
-        );
     }
 
     /**
-     * @param mixed $middleware
-     * @return MiddlewareInterface|null
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws \ReflectionException
+     * Creates a MiddlewareInterface instance from the given middleware.
+     *
+     * The middleware argument can be any callable resolvable by the executor. This method inspects its
+     * signature via reflection:
+     * - If the callable expects a ServerRequestInterface and one callable argument, it's treated as single-pass middleware.
+     * - If the callable expects a ServerRequestInterface, a ResponseInterface, and a callable argument,
+     *   it's treated as double-pass middleware.
+     * - Otherwise, the callable is wrapped in a standard CallableAdapter.
+     *
+     * @param mixed $middleware The middleware callable or middleware definition.
+     * @return MiddlewareInterface|null Returns the adapted middleware or null if resolution failed.
+     * @throws CallableResolverExceptionInterface When callable resolution fails.
      */
     public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
     {
-        $reflector = null;
+        $callable = $this->executor->resolve($middleware);
+        if (!$callable) return null;
 
-        if (is_callable($middleware)) {
-            if (is_object($middleware)) {
-                if ($middleware instanceof \Closure) $reflector = new \ReflectionFunction($middleware);
-                else $reflector = new \ReflectionMethod($middleware, '__invoke');
-            }
-            elseif (is_array($middleware)) $reflector = new \ReflectionMethod($middleware[0], $middleware[1]);
-            elseif (is_string($middleware)) {
-                if (str_contains($middleware, '::')) $reflector = $this->getReflector($middleware);
-                else $reflector = new \ReflectionFunction($middleware);
-            }
-        }
+        $reflector = Reflection::callable($callable);
 
-        else if (is_string($middleware)) {
-            if (str_contains($middleware, '::')) {
-                $reflector = $this->getReflector($middleware);
-                $middleware = [$this->container->get($reflector->class), $reflector->name];
-            } else {
-                try {
-                    $reflector = new \ReflectionMethod($middleware, '__invoke');
-                    $middleware = [$this->container->get($middleware), '__invoke'];
-                } catch (\Throwable) {
-                    return null;
-                }
+        $count = count($parameters = $reflector->getParameters());
+        $isServerRequest = $this->isParameterTypeCompatible($parameters[0], ServerRequestInterface::class);
+
+        if ($count > 0 && $isServerRequest) {
+            if ($this->isSinglePassMiddleware($count, $parameters)) {
+                return CallableAdapter::singlePassMiddleware($middleware, $this->executor);
+            }
+
+            if ($this->isDoublePassMiddleware($count, $parameters)) {
+                return CallableAdapter::doublePassMiddleware($middleware, $this->executor, $this->responseFactory);
             }
         }
 
-        if (!$reflector) return null;
-
-        $returnType = $reflector->getReturnType();
-
-        if ($returnType instanceof \ReflectionIntersectionType) {
-            foreach ($returnType->getTypes() as $type) {
-                if ($this->checkReturnType($type)){
-                    $returnType = $type;
-                    break;
-                }
-            }
-        }
-
-        if (!$this->checkReturnType($returnType)) {
-            throw UnresolvableMiddlewareException::makeFrom($middleware);
-        }
-
-        if ($returnType->getName() != ResponseInterface::class ||
-            is_subclass_of($returnType->getName(), ResponseInterface::class)) {
-            try {
-                $middleware = $this->call($middleware, $reflector->getParameters());
-            } catch (\Throwable $e) {
-                throw UnresolvableMiddlewareException::fromPrev($e, $middleware);
-            }
-
-            if ($middleware instanceof MiddlewareInterface) return $middleware;
-            else return new RequestHandlerAdapter($middleware);
-        }
-
-        if (($count = count($parameters = $reflector->getParameters())) == 0) {
-            return new CallableAdapter($middleware);
-        }
-
-        if ($count == 1 && $this->checkType($parameters[0], ContainerInterface::class)) {
-            return CallableAdapter::adoptContainerParameterCallable($middleware, $this->container);
-        }
-
-        if ($this->checkType($parameters[0], ServerRequestInterface::class)) {
-
-            if ($count == 1) {
-                return new CallableAdapter($middleware);
-            }
-
-            if ($count == 2) {
-                if ($this->checkType($parameters[1], RequestHandlerInterface::class)) {
-                    return new CallableAdapter($middleware);
-                }
-
-                if ($this->declaresCallable($parameters[1])) {
-                    return CallableAdapter::adoptSinglePassMiddleware($middleware);
-                }
-            }
-
-            if ($count === 3) {
-                if ($this->checkType($parameters[1], ResponseInterface::class)
-                    && $this->declaresCallable($parameters[2])) {
-                    return CallableAdapter::adoptDoublePassMiddleware($middleware, $this->responseFactory);
-                }
-            }
-        }
-
-        return CallableAdapter::adopt($middleware, $this->resolver, $parameters);
+        return new CallableAdapter($callable, $this->executor);
     }
 
-    /**
-     * @throws \ReflectionException
-     */
-    private function getReflector(string $middleware): \ReflectionMethod
+    private function isSinglePassMiddleware(int $count, array $parameters): bool
     {
-        list($class, $method) = explode('::', $middleware, 2);
-        return new \ReflectionMethod($class, $method);
+        return $count == 2 && $this->declaresCallable($parameters[1]);
     }
 
-    private function checkReturnType(?\ReflectionType $type): bool
+    private function isDoublePassMiddleware(int $count, array $parameters): bool
     {
-        if (!$type instanceof ReflectionNamedType) return false;
-        return ($typeName = $type->getName()) == MiddlewareInterface::class || $typeName == ResponseInterface::class || $typeName == RequestHandlerInterface::class
-            || is_subclass_of($typeName, MiddlewareInterface::class)
-            || is_subclass_of($typeName, ResponseInterface::class)
-            || is_subclass_of($typeName, RequestHandlerInterface::class);
+        return $count == 3 && $this->isParameterTypeCompatible($parameters[1], ResponseInterface::class)
+            && $this->declaresCallable($parameters[2]);
     }
 
     /**
@@ -162,14 +86,13 @@ class CallableStrategy implements StrategyInterface
      * @param string $type
      * @return bool
      */
-    private function checkType(ReflectionParameter $parameter, string $type): bool
+    private function isParameterTypeCompatible(ReflectionParameter $parameter, string $type): bool
     {
         if (!($refType = $parameter->getType()) instanceof ReflectionNamedType) {
             return false;
         }
 
-        return Type::isInterface($refType->getName(), $type)
-            || is_subclass_of($refType->getName(), $type);
+        return ($typeName = $refType->getName()) == $type || is_subclass_of($typeName, $type);
     }
 
     /**
@@ -185,33 +108,24 @@ class CallableStrategy implements StrategyInterface
             ? $reflectionType->getTypes()
             : [$reflectionType];
 
-        return array_any($types, fn($type) => $type->getName() == 'callable');
+        return array_any($types, static fn(\ReflectionNamedType $type) => $type->getName() == 'callable');
 
     }
 
     /**
-     * @param callable $callable
-     * @param ReflectionParameter[] $parameters
-     * @return MiddlewareInterface|RequestHandlerInterface
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws InvocationException
-     * @throws NotCallableException
-     * @throws NotEnoughParametersException
-     */
-    private function call(callable $callable, array $parameters): MiddlewareInterface|RequestHandlerInterface
-    {
-        return call_user_func_array($callable, $this->resolver->resolve($parameters));
-    }
-
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
+     * Creates an instance of CallableStrategy using a PSR-11 container.
+     *
+     * This method retrieves required dependencies from the container: CallableExecutorInterface and ResponseFactoryInterface.
+     *
+     * @param ContainerInterface $container The container used to retrieve dependencies.
+     * @return CallableStrategy The constructed CallableStrategy instance.
+     * @throws ContainerExceptionInterface If there is an error while retrieving an entry.
+     * @throws NotFoundExceptionInterface If a required dependency is not found.
      */
     public static function createFromContainer(ContainerInterface $container): CallableStrategy
     {
-        return new static($container,
-            $container->get(ResolverCollector::class), 
+        return new static(
+            $container->get(CallableExecutorInterface::class),
             $container->get(ResponseFactoryInterface::class)
         );
     }
