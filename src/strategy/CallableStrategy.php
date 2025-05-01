@@ -3,8 +3,8 @@
 namespace Bermuda\MiddlewareFactory\Strategy;
 
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
-use dicontainer\CallableExecutorInterface;
-use dicontainer\CallableResolverExceptionInterface;
+use Bermuda\DI\CallableExecutorInterface;
+use Bermuda\DI\CallableResolutionExceptionInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
