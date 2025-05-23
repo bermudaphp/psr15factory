@@ -4,7 +4,7 @@ namespace Bermuda\MiddlewareFactory\Strategy;
 
 use Bermuda\MiddlewareFactory\Adapter\CallableAdapter;
 use Bermuda\DI\CallableExecutorInterface;
-use Bermuda\DI\CallableResolutionExceptionInterface;
+use Bermuda\DI\CallableResolverExceptionInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
-use Reflection\Reflection;
+use Bermuda\Reflection\Reflection;
 use ReflectionNamedType;
 use ReflectionParameter;
 
@@ -47,7 +47,7 @@ final class CallableStrategy implements StrategyInterface
      * @return MiddlewareInterface|null Returns the adapted middleware or null if resolution failed.
      * @throws CallableResolverExceptionInterface When callable resolution fails.
      */
-    public function createMiddleware(mixed $middleware): ?MiddlewareInterface
+    public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
     {
         $callable = $this->executor->resolve($middleware);
         if (!$callable) return null;

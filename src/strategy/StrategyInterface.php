@@ -11,13 +11,13 @@ use Psr\Http\Server\MiddlewareInterface;
  * should attempt to convert a given middleware definition into a valid PSR-15 MiddlewareInterface
  * instance.
  *
- * The createMiddleware method accepts middleware definitions of various types and returns either:
+ * The makeMiddleware method accepts middleware definitions of various types and returns either:
  * - A valid MiddlewareInterface instance if the strategy can successfully resolve the definition.
  * - Null if the strategy does not apply to the provided middleware.
  *
- * This approach enables a flexible, pluggable system where multiple resolution strategies can be
- * utilized to transform different middleware definitions (such as callables, class names, or pipelines)
- * into standard-compliant PSR-15 middleware.
+ * This allows for a flexible, pluggable system in which different resolution strategies can be tried
+ * to transform middleware definitions (e.g., callables, class names, pipelines) into middleware that
+ * conforms to the PSR-15 standard.
  */
 interface StrategyInterface
 {
@@ -33,5 +33,5 @@ interface StrategyInterface
      *
      * @throws \Throwable If an error occurs during the middleware resolution process.
      */
-    public function createMiddleware(mixed $middleware):? MiddlewareInterface;
+    public function makeMiddleware(mixed $middleware):? MiddlewareInterface;
 }
