@@ -5,23 +5,23 @@ namespace Bermuda\MiddlewareFactory;
 use Psr\Http\Server\MiddlewareInterface;
 
 /**
- * MiddlewareFactoryInterface defines a contract for creating a PSR-15 middleware
- * instance from arbitrary input.
+ * Interface MiddlewareFactoryInterface
  *
- * Implementers of this interface must construct and return an instance of MiddlewareInterface
- * based on the provided input parameter. If the middleware cannot be resolved, an exception
- * that implements MiddlewareResolutionExceptionInterface should be thrown.
+ * This interface defines a factory for creating PSR-15 MiddlewareInterface instances
+ * from various middleware definitions.
+ *
+ * The makeMiddleware method accepts an input of any type and tries to resolve it into
+ * a valid MiddlewareInterface instance. If the middleware cannot be resolved, it throws
+ * an UnresolvableMiddlewareException.
  */
 interface MiddlewareFactoryInterface
 {
     /**
-     * Creates and returns a PSR-15 middleware instance based on the supplied input.
+     * Resolves the provided middleware definition into a PSR-15 middleware instance.
      *
-     * @param mixed $any The input data used to resolve or construct the middleware instance.
-     *
-     * @return MiddlewareInterface The created middleware instance.
-     *
+     * @param mixed $any The middleware definition to be resolved.
+     * @return MiddlewareInterface A valid PSR-15 middleware instance.
      * @throws MiddlewareResolutionExceptionInterface If the middleware cannot be resolved.
      */
-    public function createMiddleware(mixed $any): MiddlewareInterface;
+    public function makeMiddleware(mixed $any): MiddlewareInterface;
 }

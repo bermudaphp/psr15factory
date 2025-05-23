@@ -17,15 +17,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use function Bermuda\Config\conf;
 
-/**
- * MiddlewareFactory is responsible for converting middleware definitions into valid
- * PSR-15 middleware instances. This is accomplished by iterating over a collection of
- * resolution strategies (StrategyInterface instances), each attempting to resolve the given
- * middleware definition.
- *
- * If no strategy is able to resolve the middleware and the given definition is not already a
- * MiddlewareInterface or RequestHandlerInterface, an UnresolvableMiddlewareException is thrown.
- */
+
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     /**
@@ -53,11 +45,11 @@ final class MiddlewareFactory implements MiddlewareFactoryInterface
      *
      * @throws MiddlewareResolutionExceptionInterface If the middleware cannot be resolved to a valid instance.
      */
-    public function createMiddleware(mixed $any): MiddlewareInterface
+    public function makeMiddleware(mixed $any): MiddlewareInterface
     {
         foreach ($this->strategies as $strategy) {
             try {
-                $middleware = $strategy->createMiddleware($any);
+                $middleware = $strategy->makeMiddleware($any);
                 if ($middleware) return $middleware;
             } catch (\Throwable $e) {
                 if (!$e instanceof MiddlewareResolutionExceptionInterface) $e = MiddlewareResolutionException::createFromPrev($any, $e);

@@ -24,7 +24,7 @@ class ConfigProvider extends \Bermuda\Config\ConfigProvider
             ClassNameStrategy::class => [ClassNameStrategy::class, 'createFromContainer'],
             MiddlewarePipelineStrategy::class => [MiddlewarePipelineStrategy::class, 'createFromContainer'],
             RequestMapperResolver::class => [self::class, 'createRequestMapperResolver'],
-            ParameterResolver::class => [self::class, 'createParameterResolver']
+            ParameterResolver::class => [self::class, 'createParameterResolver'],
         ];
     }
 
@@ -33,25 +33,29 @@ class ConfigProvider extends \Bermuda\Config\ConfigProvider
         return [MiddlewareFactoryInterface::class => MiddlewareFactory::class];
     }
 
+    protected function getProviders(): array
+    {
+        return [];
+        //return [\Bermuda\ParameterResolver\ConfigProvider::class];
+    }
+
     protected function getInvokables(): array
     {
         return [RequestAttributeResolver::class];
     }
-    
-    private function createRequestMapperResolver(ContainerInterface $container): RequestMapperResolver
+
+    public static function createRequestMapperResolver(ContainerInterface $container): RequestMapperResolver
     {
         return new RequestMapperResolver($container->get(FactoryInterface::class));
     }
 
-    private function createParameterResolver(ContainerInterface $container): ParameterResolver
+    public static function createParameterResolver(ContainerInterface $container): ParameterResolver
     {
-        if ($container->has(ParameterResolver::class)) {
-            $resolver = $container->get(ParameterResolver::class);
-        } else $resolver = ParameterResolver::createDefaults($container);
+        $resolver = ParameterResolver::createDefaults($container);
 
         $resolver->addResolver($container->get(RequestAttributeResolver::class), true);
         $resolver->addResolver($container->get(RequestMapperResolver::class), true);
-        
+
         return $resolver;
     }
 }
