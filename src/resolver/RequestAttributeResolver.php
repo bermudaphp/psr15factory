@@ -8,7 +8,7 @@ use Bermuda\ParameterResolver\ParameterResolverInterface;
 use Bermuda\ParameterResolver\ResolverException;
 use Bermuda\Reflection\TypeMatcher;
 use Psr\Http\Message\ServerRequestInterface;
-use Reflection\Reflection;
+use Bermuda\Reflection\Reflection;
 
 /**
  * Class RequestAttributeResolver
