@@ -55,9 +55,8 @@ final class CallableStrategy implements StrategyInterface
         $reflector = Reflection::callable($callable);
 
         $count = count($parameters = $reflector->getParameters());
-        $isServerRequest = $this->isParameterTypeCompatible($parameters[0], ServerRequestInterface::class);
 
-        if ($count > 0 && $isServerRequest) {
+        if ($count > 0 && $this->isParameterTypeCompatible($parameters[0], ServerRequestInterface::class)) {
             if ($this->isSinglePassMiddleware($count, $parameters)) {
                 return CallableAdapter::singlePassMiddleware($middleware, $this->executor);
             }
