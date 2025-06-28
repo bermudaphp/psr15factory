@@ -8,39 +8,12 @@
 - PSR-7 HTTP Message Interface
 - PSR-11 Container Interface  
 - PSR-15 HTTP Server Request Handlers
-- bermudaphp/di-resolver (для атрибутов `#[Config]` и `#[Inject]`)
 
 ## Установка
 
 ```bash
 composer require bermudaphp/psr15factory
 ```
-
-## Основные возможности
-
-### 🎯 Универсальная фабрика middleware
-- Автоматическое определение типа middleware
-- Поддержка callables, классов, объектов и пайплайнов
-- Стратегический паттерн для расширяемости
-
-### 🔄 Адаптация различных паттернов
-- **Single-pass middleware**: `function($request, $next)`
-- **Double-pass middleware**: `function($request, $response, $next)`
-- **Standard PSR-15**: `MiddlewareInterface` и `RequestHandlerInterface`
-
-### 💉 Автоматическое внедрение зависимостей
-- Резолвинг параметров через PSR-11 контейнер
-- Мапинг данных запроса в параметры методов
-- Поддержка PHP 8+ атрибутов
-
-### 🗺️ Мапинг данных запроса
-- Query параметры (`#[MapQueryParameter]`)
-- Request payload - JSON, form data (`#[MapRequestPayload]`) 
-- Request attributes (`#[RequestAttribute]`)
-- Конфигурация приложения (`#[Config]`)
-- DI контейнер инъекции (`#[Inject]`)
-- Гибкое переименование полей
-
 ## Быстрый старт
 
 ### Базовая настройка
