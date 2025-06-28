@@ -1,6 +1,6 @@
 # Bermuda PSR-15 Factory
 
-**Languages:** [English](README.md) | [Русский](README-RU.md)
+**Languages:** [English](README.md) | [Русский](README.RU.md)
 
 A powerful and flexible factory for creating PSR-15 compatible middleware in PHP. Supports various types of middleware definitions, automatic dependency injection, request data mapping, and multiple middleware patterns.
 
