@@ -2,7 +2,7 @@
 
 namespace Bermuda\MiddlewareFactory\Strategy;
 
-use Bermuda\Pipeline\EmptyPipelineHandler;
+use Bermuda\Http\Middleware\EmptyPipelineHandler;
 use Psr\Http\Server\MiddlewareInterface;
 use Bermuda\MiddlewareFactory\MiddlewareFactoryAwareInterface;
 use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
