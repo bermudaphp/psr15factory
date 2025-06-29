@@ -13,7 +13,7 @@
     "request-mapping",
     "middleware-factory",
     "http",
-    "middleware-resolver"
+    "middleware-resolver",
     "php84"
   ],
   "require": {
