@@ -4,7 +4,6 @@ namespace Bermuda\MiddlewareFactory;
 
 use Bermuda\ContainerAwareInterface;
 use Bermuda\MiddlewareFactory\Strategy\MiddlewarePipelineStrategy;
-use Bermuda\Pipeline\PipelineFactoryInterface;
 use Bermuda\MiddlewareFactory\Adapter\RequestHandlerAdapter;
 use Bermuda\MiddlewareFactory\Strategy\CallableStrategy;
 use Bermuda\MiddlewareFactory\Strategy\ClassNameStrategy;
@@ -17,106 +16,157 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use function Bermuda\Config\conf;
 
-
+/**
+ * Primary factory for creating PSR-15 middleware instances from various definitions.
+ *
+ * This factory implements a strategy pattern to resolve different types of middleware
+ * definitions (callables, class names, objects, pipelines) into PSR-15 compliant
+ * MiddlewareInterface instances. It maintains a collection of resolution strategies
+ * that are tried in order until one successfully creates a middleware instance.
+ *
+ * The factory provides comprehensive error handling with detailed exception messages
+ * and backtrace information to help developers debug middleware resolution issues.
+ */
 final class MiddlewareFactory implements MiddlewareFactoryInterface
 {
     /**
+     * Collection of registered middleware resolution strategies.
+     *
      * @var StrategyInterface[]
      */
-    private array $strategies = [];
+    private(set) array $strategies = [];
 
+    /**
+     * Creates a new middleware factory with the specified container.
+     *
+     * @param ContainerInterface $container PSR-11 container for dependency injection
+     */
     public function __construct(
-        private readonly ContainerInterface $container,
+        private readonly ContainerInterface $container
     ) {
     }
 
     /**
      * Resolves a middleware definition to a valid PSR-15 MiddlewareInterface instance.
      *
-     * The method iterates over the registered strategies and attempts to resolve the given middleware definition.
-     * When a strategy successfully returns a middleware instance, that instance is returned immediately.
-     * If an exception occurs during resolution, it is wrapped (if needed) and enriched with backtrace information.
+     * Resolution process:
+     * 1. Iterate through registered strategies in order
+     * 2. Each strategy attempts to resolve the middleware definition
+     * 3. Return the first successful resolution
+     * 4. Handle built-in PSR-15 types (MiddlewareInterface, RequestHandlerInterface)
+     * 5. Throw detailed exception if resolution fails
      *
-     * Additionally, if the provided middleware is already a MiddlewareInterface or a RequestHandlerInterface,
-     * it is adapted accordingly.
+     * All exceptions during resolution are enriched with backtrace information
+     * and wrapped in MiddlewareResolutionException for consistent error handling.
      *
-     * @param mixed $any The middleware definition to be resolved.
-     * @return MiddlewareInterface A valid middleware instance.
-     *
-     * @throws MiddlewareResolutionExceptionInterface If the middleware cannot be resolved to a valid instance.
+     * @param mixed $any The middleware definition to resolve
+     * @return MiddlewareInterface A valid PSR-15 middleware instance
+     * @throws MiddlewareResolutionExceptionInterface If resolution fails
      */
     public function makeMiddleware(mixed $any): MiddlewareInterface
     {
+        // Try each registered strategy for custom middleware types
         foreach ($this->strategies as $strategy) {
             try {
                 $middleware = $strategy->makeMiddleware($any);
                 if ($middleware) return $middleware;
             } catch (\Throwable $e) {
-                if (!$e instanceof MiddlewareResolutionExceptionInterface) $e = MiddlewareResolutionException::createFromPrev($any, $e);
-                if ($e instanceof BacktraceAwareInterface) $e->setBacktrace(debug_backtrace()[0]);
+                // Wrap non-resolution exceptions and add backtrace info
+                if (!$e instanceof MiddlewareResolutionExceptionInterface) {
+                    $e = MiddlewareResolutionException::createFromPrev($any, $e);
+                }
+
+                if ($e instanceof BacktraceAwareInterface) {
+                    $e->setBacktrace(debug_backtrace()[0]);
+                }
 
                 throw $e;
             }
         }
 
-        if ($any instanceof MiddlewareInterface) return $any;
-        if ($any instanceof RequestHandlerInterface) return new RequestHandlerAdapter($any);
+        // Handle built-in PSR-15 middleware types
+        if ($any instanceof MiddlewareInterface) {
+            return $any;
+        }
 
+        if ($any instanceof RequestHandlerInterface) {
+            return new RequestHandlerAdapter($any);
+        }
 
-        $e = throw new MiddlewareResolutionException($any, 'Canno\'t resolve middleware');
-        $e->setBacktrace(debug_backtrace()[0]);
+        // Create detailed resolution failure exception
+        $exception = new MiddlewareResolutionException(
+            $any,
+            'Cannot resolve middleware: no registered strategy can handle this type of middleware definition'
+        );
+        $exception->setBacktrace(debug_backtrace()[0]);
 
-        throw $e;
+        throw $exception;
     }
 
-
     /**
-     * Registers a new strategy for resolving middleware definitions.
+     * Registers a new middleware resolution strategy.
      *
-     * If the provided strategy implements ContainerAwareInterface, the container is injected into it.
-     * The strategy is then appended (or prepended, based on the flag) to the internal list of strategies.
+     * Strategies are tried in the order they are registered. Use the prepend flag
+     * to add high-priority strategies that should be tried first.
      *
-     * @param StrategyInterface $strategy The strategy instance to be added.
-     * @param bool $prepend If true, the strategy is added at the beginning of the list.
+     * The factory automatically injects dependencies into strategies:
+     * - If strategy implements ContainerAwareInterface, injects the container
+     * - If strategy implements MiddlewareFactoryAwareInterface, injects this factory
+     *
+     * @param StrategyInterface $strategy The resolution strategy to register
+     * @param bool $prepend Whether to add the strategy at the beginning (higher priority)
      */
     public function addStrategy(StrategyInterface $strategy, bool $prepend = false): void
     {
-        if ($strategy instanceof ContainerAwareInterface) $strategy->setContainer($this->container);
-        if ($prepend) array_unshift($this->strategies, $strategy);
-        else $this->strategies[] = $strategy;
+        // Inject container if strategy supports it
+        if ($strategy instanceof ContainerAwareInterface) {
+            $strategy->setContainer($this->container);
+        }
+
+        // Inject middleware factory if strategy supports it
+        if ($strategy instanceof MiddlewareFactoryAwareInterface) {
+            $strategy->setMiddlewareFactory($this);
+        }
+
+        // Add strategy with appropriate priority
+        if ($prepend) {
+            array_unshift($this->strategies, $strategy);
+        } else {
+            $this->strategies[] = $strategy;
+        }
     }
 
     /**
-     * Creates a new MiddlewareFactory instance using a PSR-11 container.
+     * Factory method to create a fully configured MiddlewareFactory from a container.
      *
-     * This static factory method retrieves configuration settings and strategy definitions from the container,
-     * pre-populating the MiddlewareFactory with both custom and default strategies.
+     * This method creates a factory instance pre-loaded with:
+     * 1. Custom strategies from configuration
+     * 2. Default built-in strategies (ClassNameStrategy, CallableStrategy, MiddlewarePipelineStrategy)
      *
-     * Custom strategies are loaded based on configuration under the key specified by
-     * ConfigProvider::CONFIG_KEY_STRATEGIES. Additionally, default strategies such as ClassNameStrategy,
-     * CallableStrategy, and MiddlewarePipelineStrategy are appended.
+     * Custom strategies can be configured using the ConfigProvider::CONFIG_KEY_STRATEGIES
+     * configuration key and can be either string service names or direct instances.
      *
-     * @param ContainerInterface $container The container used to resolve strategy dependencies.
-     *
-     * @return self A fully configured instance of MiddlewareFactory.
-     *
-     * @throws NotFoundExceptionInterface If a strategy dependency is not found in the container.
-     * @throws ContainerExceptionInterface If an error occurs while retrieving a dependency from the container.
+     * @param ContainerInterface $container PSR-11 container for dependency resolution
+     * @return self Fully configured middleware factory instance
+     * @throws NotFoundExceptionInterface If a configured strategy service is not found
+     * @throws ContainerExceptionInterface If container access fails
      */
     public static function createFromContainer(ContainerInterface $container): self
     {
         $config = conf($container);
-
         $factory = new self($container);
 
-        foreach ($config->get(ConfigProvider::CONFIG_KEY_STRATEGIES, []) as $strategy) {
+        // Register custom strategies from configuration
+        $customStrategies = $config->get(ConfigProvider::CONFIG_KEY_STRATEGIES, []);
+        foreach ($customStrategies as $strategy) {
             if (is_string($strategy)) $strategy = $container->get($strategy);
             $factory->addStrategy($strategy);
         }
 
+        // Register default strategies (order matters - more specific strategies first)
         $factory->addStrategy($container->get(ClassNameStrategy::class));
         $factory->addStrategy($container->get(CallableStrategy::class));
-        $factory->addStrategy($container->get(MiddlewarePipelineStrategy::class));
+        $factory->addStrategy(new MiddlewarePipelineStrategy()); // No factory injection needed here
 
         return $factory;
     }
