@@ -10,22 +10,22 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Class ClassNameStrategy
+ * Strategy for resolving middleware from fully-qualified class names.
  *
- * This strategy is responsible for resolving middleware or request handler definitions provided
- * as fully-qualified class names via a PSR-11 container. When a string (representing a class name)
- * is passed to the strategy, it attempts to retrieve an instance from the container:
+ * This strategy resolves middleware definitions provided as string class names
+ * by retrieving instances from a PSR-11 container. It supports both:
+ * - Classes implementing MiddlewareInterface (returned directly)
+ * - Classes implementing RequestHandlerInterface (wrapped in RequestHandlerAdapter)
  *
- * - If the resolved instance implements MiddlewareInterface, it is returned directly.
- * - If the resolved instance implements RequestHandlerInterface, it is wrapped using a RequestHandlerAdapter
- *   to conform to the PSR-15 MiddlewareInterface.
- *
- * If the middleware parameter is not a string, or if resolution from the container fails, the strategy returns null.
+ * The strategy validates that the class exists and implements the required interface
+ * before attempting container resolution to avoid unnecessary container calls.
  */
 final class ClassNameStrategy implements StrategyInterface
 {
     /**
-     * @param ContainerInterface $container The PSR-11 container used for retrieving middleware instances.
+     * Creates a new class name strategy with the specified container.
+     *
+     * @param ContainerInterface $container PSR-11 container for resolving class instances
      */
     public function __construct(
         private readonly ContainerInterface $container
@@ -33,17 +33,17 @@ final class ClassNameStrategy implements StrategyInterface
     }
 
     /**
-     * Attempts to resolve a middleware provided as a class name.
+     * Resolves middleware from a class name string.
      *
-     * This method checks if the provided middleware is a string representing a class name. It then:
-     *  - Tries to get an instance from the container that implements MiddlewareInterface.
-     *  - If not found, tries to get an instance that implements RequestHandlerInterface and wraps it
-     *    in a RequestHandlerAdapter.
+     * Resolution process:
+     * 1. Validates input is a string (class name)
+     * 2. Attempts to resolve as MiddlewareInterface implementation
+     * 3. Falls back to RequestHandlerInterface implementation (wrapped in adapter)
+     * 4. Returns null if neither interface is implemented or class not found
      *
-     * @param mixed $middleware The middleware definition, expected to be a class name string.
-     * @return MiddlewareInterface|null Returns a MiddlewareInterface instance if resolved, otherwise null.
-     *
-     * @throws ContainerExceptionInterface if an error occurs while accessing the container.
+     * @param mixed $middleware The middleware definition (expected to be a class name string)
+     * @return MiddlewareInterface|null Resolved middleware instance or null if resolution fails
+     * @throws ContainerExceptionInterface If container access fails
      */
     public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
     {
@@ -51,25 +51,25 @@ final class ClassNameStrategy implements StrategyInterface
             !is_string($middleware) => null,
             ($obj = $this->get($middleware, MiddlewareInterface::class)) !== null => $obj,
             ($obj = $this->get($middleware, RequestHandlerInterface::class)) !== null => new RequestHandlerAdapter($obj),
-            defaul => null
+            default => null
         };
     }
 
     /**
-     * Retrieves an instance from the container if the given middleware class name is a subclass of the specified interface.
+     * Retrieves an instance from the container if the class implements the specified interface.
      *
-     * This helper method checks whether the middleware class is a subclass of the provided interface (or class)
-     * and if the container has a corresponding entry. If both conditions are met, it returns the instance from the container.
+     * This helper method performs interface validation before container access to ensure
+     * efficient resolution and avoid unnecessary container calls for incompatible classes.
      *
-     * @param string $middleware The middleware class name.
-     * @param string $class The interface or class name to check against.
-     * @return MiddlewareInterface|RequestHandlerInterface|null Returns the container instance if valid; otherwise, null.
-     *
-     * @throws ContainerExceptionInterface if an error occurs while retrieving the instance from the container.
+     * @param string $middleware The fully-qualified class name
+     * @param string $interface The required interface or parent class
+     * @return MiddlewareInterface|RequestHandlerInterface|null Container instance if valid, null otherwise
+     * @throws ContainerExceptionInterface If container access fails
      */
-    private function get(string $middleware, string $class): null|MiddlewareInterface|RequestHandlerInterface
+    private function get(string $middleware, string $interface): null|MiddlewareInterface|RequestHandlerInterface
     {
-        if (is_subclass_of($middleware, $class) && $this->container->has($middleware)) {
+        // Validate class implements required interface and exists in container
+        if (is_subclass_of($middleware, $interface) && $this->container->has($middleware)) {
             return $this->container->get($middleware);
         }
 
@@ -77,12 +77,10 @@ final class ClassNameStrategy implements StrategyInterface
     }
 
     /**
-     * Creates a new instance of ClassNameStrategy using a PSR-11 container.
+     * Factory method to create ClassNameStrategy from a container.
      *
-     * This static factory method instantiates a ClassNameStrategy by utilizing the provided container.
-     *
-     * @param ContainerInterface $container The PSR-11 container used to resolve middleware dependencies.
-     * @return ClassNameStrategy A new instance of ClassNameStrategy.
+     * @param ContainerInterface $container PSR-11 container for dependency resolution
+     * @return ClassNameStrategy New strategy instance
      */
     public static function createFromContainer(ContainerInterface $container): ClassNameStrategy
     {

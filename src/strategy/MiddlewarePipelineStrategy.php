@@ -2,33 +2,40 @@
 
 namespace Bermuda\MiddlewareFactory\Strategy;
 
+use Bermuda\Pipeline\EmptyPipelineHandler;
+use Psr\Http\Server\MiddlewareInterface;
+use Bermuda\MiddlewareFactory\MiddlewareFactoryAwareInterface;
 use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
+use Bermuda\MiddlewareFactory\MiddlewareGroup;
+use Bermuda\Pipeline\Pipeline;
 use Bermuda\Pipeline\PipelineFactory;
 use Bermuda\Pipeline\PipelineFactoryInterface;
 use Bermuda\Pipeline\PipelineInterface;
 use Psr\Container\ContainerInterface;
 
 /**
- * MiddlewarePipelineStrategy creates a middleware pipeline from an iterable collection of middleware.
+ * Strategy for resolving Pipeline and MiddlewareGroup into middleware.
  *
- * This strategy checks if the provided middleware is iterable. If it is, the strategy delegates the creation
- * of a PipelineInterface instance to a PipelineFactoryInterface. This allows multiple pieces of middleware to
- * be combined into a single pipeline that can process server requests sequentially.
- *
- * If the middleware is not iterable, the strategy returns null, indicating that the input is not valid for
- * pipeline creation.
+ * Supports:
+ * - PipelineInterface (ready pipelines with MiddlewareInterface instances)
+ * - MiddlewareGroup (groups of middleware definitions for conversion)
  */
-final class MiddlewarePipelineStrategy implements StrategyInterface
+final class MiddlewarePipelineStrategy implements StrategyInterface, MiddlewareFactoryAwareInterface
 {
-    /**
-     * Constructor for MiddlewarePipelineStrategy.
-     *
-     * @param PipelineFactoryInterface $pipelineFactory The factory used to create middleware pipelines.
-     *                                                    Defaults to a new PipelineFactory instance if not provided.
-     */
     public function __construct(
-        private readonly PipelineFactoryInterface $pipelineFactory = new PipelineFactory
+        private ?MiddlewareFactoryInterface $middlewareFactory = null
     ) {
+    }
+
+    /**
+     * Sets the middleware factory instance.
+     *
+     * @param MiddlewareFactoryInterface $middlewareFactory The middleware factory
+     * @return void
+     */
+    public function setMiddlewareFactory(MiddlewareFactoryInterface $middlewareFactory): void
+    {
+        $this->middlewareFactory = $middlewareFactory;
     }
 
     /**
@@ -39,11 +46,38 @@ final class MiddlewarePipelineStrategy implements StrategyInterface
      * @return PipelineInterface|null Returns a PipelineInterface instance if $middleware is iterable,
      *                                otherwise returns null.
      */
-    public function makeMiddleware(mixed $middleware): ?PipelineInterface
+    public function makeMiddleware(mixed $middleware): ?MiddlewareInterface
     {
-        return is_iterable($middleware)
-            ? $this->pipelineFactory->createMiddlewarePipeline($middleware)
-            : null;
+        return match (true) {
+            $middleware instanceof PipelineInterface => $middleware,
+            $middleware instanceof MiddlewareGroup => $this->convertGroupToPipeline($middleware),
+            default => null
+        };
+    }
+
+    /**
+     * Converts MiddlewareGroup to Pipeline with resolved middleware instances.
+     *
+     * @param MiddlewareGroup $group Group to convert
+     * @return PipelineInterface Ready pipeline with middleware instances
+     * @throws \RuntimeException If middleware factory is not set
+     */
+    private function convertGroupToPipeline(MiddlewareGroup $group): PipelineInterface
+    {
+        if ($this->middlewareFactory === null) {
+            throw new \RuntimeException(
+                'MiddlewareFactory is required to convert MiddlewareGroup to Pipeline. ' .
+                'Ensure the strategy is properly registered with MiddlewareFactory.'
+            );
+        }
+
+        $resolvedMiddlewares = [];
+
+        foreach ($group->middlewares as $definition) {
+            $resolvedMiddlewares[] = $this->middlewareFactory->makeMiddleware($definition);
+        }
+
+        return new Pipeline($resolvedMiddlewares, new EmptyPipelineHandler());
     }
 
     /**
@@ -58,6 +92,6 @@ final class MiddlewarePipelineStrategy implements StrategyInterface
      */
     public static function createFromContainer(ContainerInterface $container): MiddlewarePipelineStrategy
     {
-        return new self($container->get(PipelineFactoryInterface::class));
+        return new self($container->get(MiddlewareFactoryInterface::class));
     }
 }
