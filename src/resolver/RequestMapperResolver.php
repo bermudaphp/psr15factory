@@ -4,98 +4,85 @@ namespace Bermuda\MiddlewareFactory\Resolver;
 
 use Bermuda\MiddlewareFactory\Attribute\MapQueryParameter;
 use Bermuda\MiddlewareFactory\Attribute\MapQueryString;
-use Bermuda\MiddlewareFactory\Attribute\MapRequestPaylod;
+use Bermuda\MiddlewareFactory\Attribute\MapRequestPayload;
 use Bermuda\ParameterResolver\ParameterResolutionException;
 use Bermuda\ParameterResolver\ParameterResolverInterface;
-use Bermuda\ParameterResolver\ResolverException;
 use Bermuda\DI\FactoryInterface;
-use http\Env\Request;
 use Psr\Http\Message\ServerRequestInterface;
-
 use Bermuda\Reflection\Reflection;
 use function Bermuda\Stdlib\to_array;
 
 /**
- * RequestMapperResolver is responsible for mapping data from a PSR-7 request to a method's parameters.
+ * Parameter resolver for mapping PSR-7 request data to method parameters.
  *
- * This resolver scans the parameter for one of the following custom mapping attributes:
- * - MapQueryParameter
- * - MapQueryString
- * - MapRequestPaylod
+ * This resolver automatically extracts and maps data from various parts of an HTTP request
+ * (query parameters, request body, query string) to method parameters based on custom
+ * mapping attributes. It supports both direct data mapping and object instantiation
+ * through dependency injection.
  *
- * Based on the attribute found, it extracts the corresponding data from the request (e.g., from
- * query parameters, the parsed body, or query string) and either:
- * - directly assigns the data to an array parameter, or
- * - creates an object (if the parameter is a class) via a factory, merging request attributes with
- *   the mapped data.
+ * Supported mapping attributes:
+ * - MapQueryParameter: Maps individual query parameters
+ * - MapQueryString: Maps entire query string with field remapping
+ * - MapRequestPayload: Maps request body data with field remapping
  */
 final class RequestMapperResolver implements ParameterResolverInterface
 {
     /**
-     * Constructor.
+     * Creates a new request mapper resolver.
      *
-     * @param FactoryInterface $factory A factory used to create objects with dependency injection.
+     * @param FactoryInterface $factory Factory for creating objects with dependency injection
      */
     public function __construct(
         private readonly FactoryInterface $factory
     ) {}
 
     /**
-     * Resolves a parameter value based on custom mapping attributes from the request.
+     * Resolves parameter values from PSR-7 request data based on mapping attributes.
      *
-     * Resolution process:
-     *   1. Retrieve a custom mapping attribute (MapQueryParameter, MapQueryString, or MapRequestPaylod)
-     *      defined on the parameter.
-     *   2. Extract the PSR-7 request instance from the provided parameters.
-     *   3. Use the attribute and the parameter's name to extract the relevant data from the request.
-     *   4. If the parameter type is 'array', return the extracted data, keyed by the parameter's name.
-     *   5. If the parameter is a class, attempt to instantiate it using the factory by merging the request
-     *      attributes with the mapped data.
-     *   6. Return an array containing the parameter position and the resolved value.
+     * Resolution workflow:
+     * 1. Check for mapping attributes on the parameter
+     * 2. Extract PSR-7 request from provided parameters
+     * 3. Extract relevant data based on attribute type
+     * 4. For array parameters: return extracted data directly
+     * 5. For class parameters: instantiate object via factory with merged data
      *
-     * @param \ReflectionParameter $parameter           The parameter to resolve.
-     * @param array                $providedParameters  An array of parameters which must include the request instance.
-     * @param array                $resolvedParameters    Previously resolved parameters (unused here).
-     *
-     * @return array{0: int, 1: mixed}|null Returns an array [position, resolved value] if successful; otherwise, null.
-     *
-     * @throws ParameterResolutionException When object creation via the factory fails or required query parameters are absent.
+     * @param \ReflectionParameter $parameter The parameter to resolve
+     * @param array $providedParameters Parameters including the PSR-7 request instance
+     * @param array $resolvedParameters Previously resolved parameters (unused)
+     * @return array{0: int, 1: mixed}|null Array with parameter position and resolved value, or null
+     * @throws ParameterResolutionException When request is missing or object creation fails
      */
     public function resolve(\ReflectionParameter $parameter, array $providedParameters = [], array $resolvedParameters = []): ?array
     {
-        if (($attribute = $this->getAttribute($parameter)) !== null) {
+        $attribute = $this->getAttribute($parameter);
+        if ($attribute === null) {
+            return null;
+        }
 
-            $request = null;
-            if (RequestParameter::has($providedParameters)) $request = RequestParameter::get($providedParameters);
+        $request = $this->extractRequest($parameter, $providedParameters, $resolvedParameters);
+        $data = $this->extractData($attribute, $request, $parameter->getName());
 
-            if (!$request) {
-                throw new ParameterResolutionException(
+        // Handle array type parameters - return data directly
+        if ($parameter->getType()?->getName() === 'array') {
+            return [$parameter->getPosition(), $data];
+        }
+
+        // Handle class type parameters - instantiate via factory
+        $className = $parameter->getType()?->getName();
+        if ($className && class_exists($className)) {
+            try {
+                $instance = $this->factory->make(
+                    $className,
+                    array_merge($request->getAttributes(), $data)
+                );
+                return [$parameter->getPosition(), $instance];
+            } catch (\Throwable $previous) {
+                throw ParameterResolutionException::createFromPrev(
                     $parameter,
                     $providedParameters,
                     $resolvedParameters,
-                    "No PSR-7 request instance found in provided parameters. \$providedParameters['".RequestParameter::KEY.".'] must be instanceof " . ServerRequestInterface::class
+                    $previous
                 );
-            }
-
-            $data = $this->extractData($attribute, $request, $parameter->getName());
-
-            if ($parameter->getType()?->getName() === 'array') {
-                return [$parameter->getPosition(), $data];
-            }
-
-            if ($parameter->getType()?->getName() && class_exists($parameter->getType()->getName())) {
-                try {
-                    $entry = $this->factory->make(
-                        $parameter->getType()->getName(),
-                        array_merge($request->getAttributes(), $data)
-                    );
-                } catch (\Throwable $previous) {
-                    throw ParameterResolutionException::createFromPrev(
-                        $parameter, $providedParameters, $resolvedParameters, $previous
-                    );
-                }
-
-                return [$parameter->getPosition(), $entry];
             }
         }
 
@@ -103,65 +90,60 @@ final class RequestMapperResolver implements ParameterResolverInterface
     }
 
     /**
-     * Extracts data from the request based on the provided mapping attribute.
+     * Extracts request data based on the mapping attribute type.
      *
-     * This method uses a match expression to determine the extraction strategy:
-     * - If the attribute is a MapQueryParameter, it calls extractQueryParameter().
-     * - If the attribute is a MapRequestPaylod, it converts the parsed body to an array and remaps its keys.
-     * - If the attribute is a MapQueryString, it remaps the query parameters according to the provided mapping.
-     * - Otherwise, it returns an empty array.
-     *
-     * @param object                 $attribute The mapping attribute instance.
-     * @param ServerRequestInterface $request   The PSR-7 request.
-     * @param string                 $paramName The name of the parameter being resolved.
-     *
-     * @return array The extracted data as an associative array.
+     * @param object $attribute The mapping attribute instance
+     * @param ServerRequestInterface $request The PSR-7 request
+     * @param string $paramName The parameter name for fallback mapping
+     * @return array Extracted and mapped data
+     * @throws \OutOfBoundsException When required query parameter is missing
      */
     private function extractData(object $attribute, ServerRequestInterface $request, string $paramName): array
     {
         return match (true) {
             $attribute instanceof MapQueryParameter => $this->extractQueryParameter($request, $attribute, $paramName),
-            $attribute instanceof MapRequestPaylod => $this->map(to_array($request->getParsedBody()), $attribute->map),
+            $attribute instanceof MapRequestPayload => $this->map(to_array($request->getParsedBody()), $attribute->map),
             $attribute instanceof MapQueryString => $this->map($request->getQueryParams(), $attribute->map),
             default => []
         };
     }
 
     /**
-     * Extracts a query parameter from the request based on a MapQueryParameter attribute.
+     * Extracts a specific query parameter from the request.
      *
-     * Checks whether the query parameters contain the specified key (from the attribute or the parameter name)
-     * and returns its value. Throws an exception if the required query parameter is missing.
-     *
-     * @param ServerRequestInterface $request   The PSR-7 request from which to extract the query parameter.
-     * @param MapQueryParameter      $attribute The attribute defining the query parameter mapping.
-     * @param string                 $paramName The default parameter name to use if the attribute's name is not provided.
-     *
-     * @return array Returns an associative array with the parameter name as the key and the extracted value.
-     *
-     * @throws \OutOfBoundsException If the query parameter is missing from the request.
+     * @param ServerRequestInterface $request The PSR-7 request
+     * @param MapQueryParameter $attribute The query parameter mapping attribute
+     * @param string $paramName Default parameter name if attribute name is not specified
+     * @return array Associative array with parameter name and value
+     * @throws \OutOfBoundsException When the required query parameter is missing
      */
     private function extractQueryParameter(ServerRequestInterface $request, MapQueryParameter $attribute, string $paramName): array
     {
         $queryParams = $request->getQueryParams();
+        $queryParamName = $attribute->name ?? $paramName;
 
-        if (!array_key_exists($attribute->name ?? $paramName, $queryParams)) {
-            throw new \OutOfBoundsException("Query parameter '{$attribute->name}' is missing.");
+        if (!array_key_exists($queryParamName, $queryParams)) {
+            throw new \OutOfBoundsException(
+                sprintf(
+                    "Required query parameter '%s' is missing from the request. Available parameters: [%s]",
+                    $queryParamName,
+                    implode(', ', array_keys($queryParams))
+                )
+            );
         }
 
-        return [$paramName => $queryParams[$attribute->name ?? $paramName]];
+        return [$paramName => $queryParams[$queryParamName]];
     }
 
     /**
-     * Remaps the keys in the provided data array according to the given mapping.
+     * Applies field name mapping to the provided data array.
      *
-     * For each mapping rule, if the source key exists in the data array, its value is reassigned to the
-     * destination key as specified, and the source key is removed.
+     * Transforms field names according to the mapping rules, removing original
+     * field names and adding new ones with the same values.
      *
-     * @param array $data The original data array.
-     * @param array $map  An associative array representing the mapping (source key => target key).
-     *
-     * @return array The data array after applying the key remapping.
+     * @param array $data The original data array
+     * @param array $map Mapping rules (source_field => target_field)
+     * @return array Data array with renamed fields
      */
     private function map(array $data, array $map): array
     {
@@ -176,20 +158,56 @@ final class RequestMapperResolver implements ParameterResolverInterface
     }
 
     /**
-     * Retrieves the first applicable mapping attribute for the given parameter.
+     * Extracts the PSR-7 request from provided parameters.
      *
-     * Iterates over the supported mapping attribute classes: MapQueryParameter, MapQueryString,
-     * and MapRequestPaylod. Returns the first attribute found, or null if none exist.
+     * @param \ReflectionParameter $parameter The parameter being resolved (for error context)
+     * @param array $providedParameters Parameters array that should contain the request
+     * @param array $resolvedParameters Previously resolved parameters (for error context)
+     * @return ServerRequestInterface The extracted request instance
+     * @throws ParameterResolutionException When request is not found or invalid
+     */
+    private function extractRequest(\ReflectionParameter $parameter, array $providedParameters, array $resolvedParameters): ServerRequestInterface
+    {
+        if (!RequestParameter::has($providedParameters)) {
+            throw new ParameterResolutionException(
+                $parameter,
+                $providedParameters,
+                $resolvedParameters,
+                sprintf(
+                    "PSR-7 request instance not found in provided parameters. Expected \$providedParameters['%s'] to be an instance of %s",
+                    RequestParameter::KEY,
+                    ServerRequestInterface::class
+                )
+            );
+        }
+
+        return RequestParameter::get($providedParameters);
+    }
+
+    /**
+     * Retrieves the first applicable mapping attribute from the parameter.
      *
-     * @param \ReflectionParameter $parameter The parameter to inspect for mapping attributes.
+     * Searches for supported mapping attributes in order of precedence:
+     * 1. MapQueryParameter (specific query parameter)
+     * 2. MapQueryString (entire query string)
+     * 3. MapRequestPayload (request body)
      *
-     * @return object|null The mapping attribute instance, or null if no attribute is found.
+     * @param \ReflectionParameter $parameter The parameter to inspect
+     * @return object|null The first mapping attribute found, or null if none exist
      */
     private function getAttribute(\ReflectionParameter $parameter): ?object
     {
-        foreach ([MapQueryParameter::class, MapQueryString::class, MapRequestPaylod::class] as $cls) {
-            $attribute = Reflection::getFirstMetadata($parameter, $cls);
-            if ($attribute) return $attribute;
+        $attributeClasses = [
+            MapQueryParameter::class,
+            MapQueryString::class,
+            MapRequestPayload::class
+        ];
+
+        foreach ($attributeClasses as $attributeClass) {
+            $attribute = Reflection::getFirstMetadata($parameter, $attributeClass);
+            if ($attribute) {
+                return $attribute;
+            }
         }
 
         return null;

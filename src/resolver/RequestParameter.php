@@ -2,39 +2,53 @@
 
 namespace Bermuda\MiddlewareFactory\Resolver;
 
-use Bermuda\ParameterResolver\ResolverException;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Class RequestParameter
+ * Utility class for managing PSR-7 ServerRequestInterface instances in parameter arrays.
  *
- * This utility class provides helper methods to manage the inclusion of a ServerRequestInterface
- * instance within an associative array of parameters. It uses the fully-qualified class name
- * of ServerRequestInterface as a unique key to store and retrieve the request.
+ * This class provides a standardized way to store, retrieve, and check for PSR-7 server
+ * request instances within associative parameter arrays used by the middleware factory
+ * and parameter resolution system.
  *
- * Methods include:
- * - set(array $providedParameters, ServerRequestInterface $request): Inserts the given server request into the parameters array.
- * - has(array $providedParameters): Checks whether the parameters array contains a valid ServerRequestInterface instance.
- * - get(array $providedParameters): Retrieves the server request from the parameters array, throwing a ResolverException
- *   if the request is missing or invalid.
+ * The class uses the fully-qualified interface name as a unique key to avoid conflicts
+ * with other parameter types and ensures type safety through strict instance checking.
  *
- * **Note:** The exception messages refer to a constant (self::PARAMETER_KEY), which should correspond to the
- * defined key (i.e., self::KEY). Make sure this constant name is consistent to avoid confusion.
+ * Usage patterns:
+ * - Parameter resolvers use this to extract request data for mapping
+ * - Middleware adapters use this to provide request context to callables
+ * - Factory strategies use this to pass request instances between components
+ *
+ * Thread safety: This class contains only static methods and no mutable state,
+ * making it safe for concurrent use in multi-threaded environments.
  */
 final class RequestParameter
 {
     /**
-     * Unique key used to store the ServerRequestInterface instance in the parameters array.
+     * Unique key for storing ServerRequestInterface instances in parameter arrays.
+     *
+     * Using the fully-qualified interface name ensures uniqueness and provides
+     * self-documenting parameter keys that clearly indicate the expected type.
      */
     public const string KEY = ServerRequestInterface::class;
 
     /**
-     * Inserts a ServerRequestInterface instance into the parameters array.
+     * Stores a PSR-7 server request instance in the provided parameters array.
      *
-     * @param array $providedParameters An associative array of parameters.
-     * @param ServerRequestInterface $request The server request instance to insert.
+     * This method creates a new parameter array with the server request instance
+     * added under the standardized key. The original array is not modified,
+     * ensuring immutability and preventing unintended side effects.
      *
-     * @return array The updated parameters array with the server request added.
+     * @param array $providedParameters The existing parameter array to extend
+     * @param ServerRequestInterface $request The server request instance to store
+     * @return array A new parameter array containing the request instance
+     *
+     * @example
+     * ```php
+     * $params = [];
+     * $params = RequestParameter::set($params, $serverRequest);
+     * // $params now contains the request under the standardized key
+     * ```
      */
     public static function set(array $providedParameters, ServerRequestInterface $request): array
     {
@@ -43,27 +57,56 @@ final class RequestParameter
     }
 
     /**
-     * Checks if the parameters array contains a valid ServerRequestInterface instance.
+     * Checks whether the parameter array contains a valid PSR-7 server request instance.
      *
-     * @param array $providedParameters An associative array of parameters.
+     * This method performs both existence and type validation to ensure that:
+     * 1. The standardized key exists in the parameter array
+     * 2. The value is actually an instance of ServerRequestInterface
      *
-     * @return bool True if a valid ServerRequestInterface instance is found under the designated key, false otherwise.
+     * This dual validation prevents false positives when the key exists but
+     * contains an invalid value (e.g., null, string, or wrong object type).
+     *
+     * @param array $providedParameters The parameter array to check
+     * @return bool True if a valid ServerRequestInterface instance is present, false otherwise
+     *
+     * @example
+     * ```php
+     * if (RequestParameter::has($params)) {
+     *     $request = RequestParameter::get($params);
+     *     // Safe to use $request as ServerRequestInterface
+     * }
+     * ```
      */
     public static function has(array $providedParameters): bool
     {
-        return isset($providedParameters[self::KEY]) && $providedParameters[self::KEY] instanceof ServerRequestInterface;
+        return isset($providedParameters[self::KEY])
+            && $providedParameters[self::KEY] instanceof ServerRequestInterface;
     }
 
     /**
-     * Retrieves the ServerRequestInterface instance from the parameters array.
+     * Retrieves the PSR-7 server request instance from the parameter array.
      *
-     * @param array $providedParameters An associative array of parameters.
+     * This method extracts the server request instance stored under the standardized
+     * key. It returns null if the request is not present or is not a valid instance,
+     * allowing for safe optional extraction without exceptions.
      *
-     * @return ?ServerRequestInterface The server request instance stored in the parameters array.
+     * For guaranteed extraction (when you know the request should be present),
+     * use `has()` first to validate presence, or handle the null return appropriately.
      *
+     * @param array $providedParameters The parameter array containing the request
+     * @return ServerRequestInterface|null The server request instance, or null if not found/invalid
+     *
+     * @example
+     * ```php
+     * $request = RequestParameter::get($params);
+     * if ($request !== null) {
+     *     // Process the request
+     *     $method = $request->getMethod();
+     * }
+     * ```
      */
     public static function get(array $providedParameters): ?ServerRequestInterface
     {
-        return $providedParameters[self::KEY];
+        return $providedParameters[self::KEY] ?? null;
     }
 }

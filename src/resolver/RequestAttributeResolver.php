@@ -15,7 +15,7 @@ use Bermuda\Reflection\Reflection;
  *
  * This parameter resolver extracts attributes from a PSR-7 server request and binds them
  * to function or method parameters. It does so by checking for a RequestAttribute annotation on the
- * method/function parameter and then using the specified attribute name (or defaulting to the parameter’s name)
+ * method/function parameter and then using the specified attribute name (or defaulting to the parameter's name)
  * to retrieve the corresponding attribute value from the request.
  *
  * The resolution process works as follows:
@@ -24,7 +24,7 @@ use Bermuda\Reflection\Reflection;
  *   3. It determines the attribute name: if the RequestAttribute annotation explicitly defines a name,
  *      that value is used; otherwise, the parameter's own name is used.
  *   4. It validates that the PSR-7 request contains this attribute. If not, a ParameterResolutionException is thrown.
- *   5. Finally, it returns an array containing the parameter’s position and the resolved attribute value.
+ *   5. Finally, it returns an array containing the parameter's position and the resolved attribute value.
  *
  * @implements ParameterResolverInterface
  */
@@ -44,7 +44,7 @@ final class RequestAttributeResolver implements ParameterResolverInterface
      * @return array{0: int, 1: mixed}|null Returns a two-element array where key "0" is the parameter position and key "1" is the resolved
      *                    request attribute value, or null if the RequestAttribute annotation is not present.
      *
-     * @throws ParameterResolutionException If the specified request attribute is missing.
+     * @throws ParameterResolutionException If the specified request attribute is missing or null value not allowed.
      */
     public function resolve(\ReflectionParameter $parameter, array $providedParameters = [], array $resolvedParameters = []): ?array
     {
@@ -66,12 +66,23 @@ final class RequestAttributeResolver implements ParameterResolverInterface
         $request = RequestParameter::get($providedParameters);
         $name = $attribute->name ?? $parameter->getName();
 
-        if (!isset($request->getAttributes()[$name]) || !array_key_exists($name, $request->getAttributes())) {
+        if (!array_key_exists($name, $request->getAttributes())) {
             throw new ParameterResolutionException(
                 $parameter,
                 $providedParameters,
                 $resolvedParameters,
                 "The required request attribute [$name] is not set for the current request"
+            );
+        }
+
+        $value = $request->getAttribute($name);
+
+        if ($value === null && !$parameter->allowsNull()) {
+            throw new ParameterResolutionException(
+                $parameter,
+                $providedParameters,
+                $resolvedParameters,
+                "The request attribute [$name] has null value but parameter '{$parameter->getName()}' does not allow null"
             );
         }
 
