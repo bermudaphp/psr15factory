@@ -7,10 +7,10 @@ use Psr\Http\Server\MiddlewareInterface;
 use Bermuda\MiddlewareFactory\MiddlewareFactoryAwareInterface;
 use Bermuda\MiddlewareFactory\MiddlewareFactoryInterface;
 use Bermuda\MiddlewareFactory\MiddlewareGroup;
-use Bermuda\Pipeline\Pipeline;
-use Bermuda\Pipeline\PipelineFactory;
-use Bermuda\Pipeline\PipelineFactoryInterface;
-use Bermuda\Pipeline\PipelineInterface;
+use Bermuda\Http\Middleware\Pipeline;
+use Bermuda\Http\Middleware\PipelineFactory;
+use Bermuda\Http\Middleware\PipelineFactoryInterface;
+use Bermuda\Http\Middleware\PipelineInterface;
 use Psr\Container\ContainerInterface;
 
 /**
